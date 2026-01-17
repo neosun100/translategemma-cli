@@ -33,10 +33,11 @@ class TestGetBackend:
             assert backend in ("mlx", "pytorch")
     
     def test_pytorch_on_linux(self):
-        """Test PyTorch backend on Linux."""
+        """Test backend on Linux - returns gguf if llama-cpp available, else pytorch."""
         with patch("platform.system", return_value="Linux"):
             backend = get_backend()
-            assert backend == "pytorch"
+            # With llama-cpp-python installed, returns gguf; otherwise pytorch
+            assert backend in ("pytorch", "gguf")
     
     def test_pytorch_on_windows(self):
         """Test PyTorch backend on Windows."""
@@ -65,12 +66,12 @@ class TestIsModelReady:
     
     def test_model_not_ready_no_directory(self, mock_config, temp_cache_dir):
         """Test model not ready when directory doesn't exist."""
-        assert is_model_ready("27b") is False
+        assert is_model_ready("27b", "hf") is False
     
     def test_model_ready_with_files(self, mock_config, temp_model_dir):
         """Test model ready when required files exist."""
-        # The temp_model_dir fixture creates the necessary files
-        assert is_model_ready("27b") is True
+        # The temp_model_dir fixture creates the necessary files (HF format)
+        assert is_model_ready("27b", "hf") is True
     
     def test_model_not_ready_missing_config(self, mock_config, temp_cache_dir):
         """Test model not ready when config.json is missing."""
@@ -82,16 +83,16 @@ class TestIsModelReady:
         assert is_model_ready("27b") is False
     
     def test_different_model_sizes(self, mock_config, temp_cache_dir):
-        """Test readiness check for different model sizes."""
+        """Test readiness check for different model sizes (HF format)."""
         for size in MODEL_SIZES:
-            assert is_model_ready(size) is False
+            assert is_model_ready(size, "hf") is False
             
             # Create model directory
             model_dir = temp_cache_dir / "models" / f"translategemma-{size}-it-4bit"
             model_dir.mkdir(parents=True, exist_ok=True)
             (model_dir / "config.json").write_text('{}')
             
-            assert is_model_ready(size) is True
+            assert is_model_ready(size, "hf") is True
 
 
 class TestListDownloadedModels:
@@ -142,7 +143,8 @@ class TestListDownloadedModels:
             assert "hf_id" in model
             assert "params" in model
             assert "quantized_size_gb" in model
-            assert "path" in model
+            assert "hf_path" in model
+            assert "gguf_path" in model
             assert "downloaded" in model
 
 

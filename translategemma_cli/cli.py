@@ -95,7 +95,7 @@ def print_help():
   [cyan]/langs[/cyan]           - List all supported languages
   [cyan]/model <size>[/cyan]    - Switch model (4b, 12b, 27b)
   [cyan]/model[/cyan]           - Show current model info
-  [cyan]/backend <type>[/cyan]  - Switch backend (auto, mlx, pytorch, vllm, ollama)
+  [cyan]/backend <type>[/cyan]  - Switch backend (auto, mlx, pytorch, gguf, vllm, ollama)
   [cyan]/backend[/cyan]         - Show backend info
   [cyan]/config[/cyan]          - Show current configuration
   [cyan]/clear[/cyan]           - Clear screen
@@ -232,7 +232,12 @@ def handle_command(command: str, translator) -> bool:
         console.print(f"  Parameters: {info['params']}")
         console.print(f"  Quantization: {info['quantization_bits']}-bit")
         console.print(f"  Backend: {info['backend']}")
-        console.print(f"  Location: [dim]{info['local_path']}[/dim]")
+        if info.get("gguf_ready"):
+            console.print(f"  Location: [dim]{info['gguf_path']}[/dim]")
+        elif info.get("hf_ready"):
+            console.print(f"  Location: [dim]{info['hf_path']}[/dim]")
+        else:
+            console.print(f"  Location: [dim]{info['hf_path']} (not downloaded)[/dim]")
         if info.get("size_gb"):
             console.print(f"  Size on disk: {info['size_gb']} GB")
         console.print(f"  Status: {'[green]Ready[/green]' if info['ready'] else '[yellow]Not downloaded[/yellow]'}")
@@ -243,7 +248,7 @@ def handle_command(command: str, translator) -> bool:
     
     elif cmd_lower.startswith("/backend "):
         backend = cmd[9:].strip().lower()
-        valid_backends = ("auto", "mlx", "pytorch", "vllm", "ollama")
+        valid_backends = ("auto", "mlx", "pytorch", "gguf", "vllm", "ollama")
         if backend not in valid_backends:
             console.print(f"[yellow]Unknown backend: {backend}[/yellow]")
             console.print(f"[dim]Available backends: {', '.join(valid_backends)}[/dim]")
@@ -260,6 +265,14 @@ def handle_command(command: str, translator) -> bool:
                 if not available:
                     console.print(f"[yellow]⚠ Ollama not available: {error}[/yellow]")
                     console.print("[dim]Install: https://ollama.ai/download[/dim]")
+                    return True
+            elif backend == "gguf":
+                # Check if llama-cpp-python is installed
+                try:
+                    from llama_cpp import Llama
+                except ImportError:
+                    console.print("[yellow]⚠ llama-cpp-python not installed[/yellow]")
+                    console.print("[dim]Install: pip install llama-cpp-python[/dim]")
                     return True
             
             config = get_config()
@@ -484,7 +497,7 @@ def main(
     backend: Optional[str] = typer.Option(
         None,
         "--backend", "-b",
-        help="Backend to use (auto, mlx, pytorch, vllm, ollama)",
+        help="Backend to use (auto, mlx, pytorch, gguf, vllm, ollama)",
     ),
     server: Optional[str] = typer.Option(
         None,
@@ -587,7 +600,7 @@ def main(
         raise typer.Exit(1)
     
     # Validate --backend option
-    valid_backends = ("auto", "mlx", "pytorch", "vllm", "ollama")
+    valid_backends = ("auto", "mlx", "pytorch", "gguf", "vllm", "ollama")
     if backend and backend not in valid_backends:
         console.print(f"[red]Invalid backend: {backend}[/red]")
         console.print(f"[dim]Available backends: {', '.join(valid_backends)}[/dim]")
@@ -772,7 +785,10 @@ def model_cmd(
         console.print(f"[bold]HuggingFace:[/bold] {info['hf_source']}")
         console.print(f"[bold]Format:[/bold] {info['backend'].upper()}")
         console.print(f"[bold]Quantization:[/bold] {info['quantization_bits']}-bit")
-        console.print(f"[bold]Location:[/bold] {info['local_path']}")
+        if info.get("gguf_ready"):
+            console.print(f"[bold]Location:[/bold] {info['gguf_path']}")
+        else:
+            console.print(f"[bold]Location:[/bold] {info['hf_path']}")
         
         if info["ready"]:
             console.print(f"[bold]Size:[/bold] {info.get('size_gb', 'N/A')} GB")

@@ -1,0 +1,402 @@
+{
+  "timestamp": "2026-01-17T19:34:37.587184",
+  "gpu": "NVIDIA L40S",
+  "models": {
+    "4b-Q4": {
+      "size_gb": 2.32,
+      "load_time_s": 1.13,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.23,
+          "chars_per_sec": 110.5,
+          "result": "您好，今天您怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 0.4,
+          "chars_per_sec": 692.9,
+          "result": "人工智能已经改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 3.09,
+          "chars_per_sec": 666.1,
+          "result": "人工智能的历史可以追溯到古代，那时，人们通过神话、故事和传闻，讲述了由工匠创造的具有智能或意识的虚构生物。现代人工智能的萌芽，则源于哲学家们，他们试图描述人类思维的过程，即通过对符号的机械操作。这项工作最终导致了 20 世纪 40 年代可编程数字计算机的发明，这是一种基于数学推理的抽象机器。\n\n这项设备以及相关的理念，激发了一批科学家认真探讨构建电子大脑的可能性。人工智能的研究领域，是在 1956 年夏天，达特茅斯学院校园举办的研讨会上成立的。参加研讨会的这些科学家，后来成为了人工智能研究的领导者，他们预测，在不超过一代人的时间里，就会出现与人类一样智能的机器，并获得了数百万美元的资金来实现这一目标。\n\n最终，人们发现，商业开发者和研究人员严重低估了这项项目的难度。1974 年，在詹姆斯·莱斯蒂尔的批评和国会的持续压力下，美国和英国政府停止了对人工智能的无定向研究的资助，而随后的困难时期后来被称为“人工智能寒冬”。七年后，日本政府的远见卓识，激励了政府和行业向人工智能投入数十亿美元，但到了 20 世纪 80 年代末，投资者们对人工智能的期望破灭，再次撤资。\n\n在 21 世纪的第一个几十年，随着机器学习在学术界和工业界成功应用于各种问题，以及新方法的应用、强大的计算机硬件和海量数据的收集，人工智能的投资和兴趣达到了顶峰。深度学习在 2012 年左右开始主导人工智能的基准，而 2022 年，随着 ChatGPT 的发布，生成式人工智能也变得非常流行。"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "source": "en",
+          "target": "zh",
+          "output": "你好，世界",
+          "time_s": 0.04
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "source": "en",
+          "target": "ja",
+          "output": "今日は天気がとても良いです。",
+          "time_s": 0.07
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "source": "en",
+          "target": "zh",
+          "output": "我非常喜欢编程和人工智能。",
+          "time_s": 0.07
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "source": "zh",
+          "target": "en",
+          "output": "The weather is so nice today, let's go for a walk in the park.",
+          "time_s": 0.15
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "source": "zh",
+          "target": "en",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.08
+        }
+      ]
+    },
+    "4b-Q8": {
+      "size_gb": 3.85,
+      "load_time_s": 1.13,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.1,
+          "chars_per_sec": 239.1,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 0.51,
+          "chars_per_sec": 537.2,
+          "result": "人工智能已经改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 3.78,
+          "chars_per_sec": 544.1,
+          "result": "人工智能的历史可以追溯到古代，那时存在着关于由工匠创造的、具有智能或意识的“人工生物”的神话、故事和传闻。现代人工智能的萌芽，则源于那些哲学家，他们试图描述人类思维的过程，将其视为符号的机械操作。这一工作最终在20世纪40年代，发明了可编程的数字计算机，这是一种基于数学推理的抽象概念。\n\n这种设备以及相关的思想，激发了一批科学家开始认真探讨构建电子大脑的可能性。人工智能的研究领域，是在1956年夏天，达特茅斯学院的研讨会上成立的。参加研讨会的这些人，后来成为了人工智能研究的领军人物，他们预测，在短短一两代人内，将会出现像人类一样智能的机器，并获得了数百万美元的资金来实现这一目标。\n\n最终，人们意识到，商业开发者和研究人员严重低估了项目的难度。1974年，在詹姆斯·莱斯希尔的批评和国会的持续压力下，美国和英国政府停止了对人工智能的无定向研究的资助，而随之而来的艰难时期，后来被称为“人工智能的寒冬”。七年后，日本政府的远见卓识，促使政府和行业向人工智能投入数十亿美元，但到20世纪80年代末，投资者们变得失望，再次撤回了资金。\n\n在21世纪的第一个几十年，随着机器学习在学术界和工业界成功应用于各种问题，以及借助新的方法、强大的计算机硬件和庞大的数据集，人工智能领域迎来了蓬勃发展。深度学习在2012年左右开始主导人工智能的评估，而ChatGPT的发布，则在2022年使生成式人工智能变得广泛流行。"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "source": "en",
+          "target": "zh",
+          "output": "你好，世界！",
+          "time_s": 0.05
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "source": "en",
+          "target": "ja",
+          "output": "今日は天気がとても良いです。",
+          "time_s": 0.09
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "source": "en",
+          "target": "zh",
+          "output": "我非常喜欢编程和人工智能。",
+          "time_s": 0.09
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "source": "zh",
+          "target": "en",
+          "output": "The weather is really nice today, let's go for a walk in the park.",
+          "time_s": 0.19
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "source": "zh",
+          "target": "en",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.1
+        }
+      ]
+    },
+    "12b-Q4": {
+      "size_gb": 6.8,
+      "load_time_s": 1.72,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.2,
+          "chars_per_sec": 125.5,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 0.84,
+          "chars_per_sec": 329.3,
+          "result": "人工智能正在改变我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既充满机遇，也面临挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 6.47,
+          "chars_per_sec": 318.0,
+          "result": "人工智能的历史可以追溯到古代，那时就存在着关于由技艺精湛的工匠创造的、拥有智慧或意识的“人造生物”的传说、故事和传闻。现代人工智能的种子是由那些试图将人类思维过程描述为符号的机械操作的哲学家们所播下的。这项工作最终在20世纪40年代促成了可编程数字计算机的发明，这是一种基于数学推理抽象本质的机器。\n\n这一设备及其背后的理念激发了少数科学家开始认真探讨构建电子大脑的可能性。人工智能研究领域是在1956年夏季，在达特茅斯学院校园举行的研讨会上正式成立的。参加研讨会的人们后来成为了人工智能研究领域的领导者，影响了数十年。其中许多人预测，在不到一代人的时间里，将会出现一台像人类一样聪明的机器，并且他们获得了数百万美元的资金来将这一愿景变为现实。\n\n最终，商业开发商和研究人员明显低估了该项目的难度。1974年，为了回应詹姆斯·莱特希尔的批评以及来自国会的持续压力，美国和英国政府停止了对人工智能的无方向性研究的资助，随后的艰难时期后来被称为“人工智能寒冬”。七年后，日本政府的一项具有前瞻性的举措激励了各国政府和企业为人工智能提供数十亿美元的资金，但到了20世纪80年代末，投资者感到失望，再次撤回了资金。\n\n在21世纪的最初几十年，由于新的方法、强大的计算机硬件以及海量数据集的积累，机器学习在学术界和工业界的应用取得了成功，从而推动了人工智能领域的投资和兴趣的蓬勃发展。深度学习领域大约在2012年开始在人工智能基准测试中占据主导地位，而生成式人工智能则在2022年随着ChatGPT的发布而广受欢迎。"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "source": "en",
+          "target": "zh",
+          "output": "你好，世界。",
+          "time_s": 0.1
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "source": "en",
+          "target": "ja",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.12
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "source": "en",
+          "target": "zh",
+          "output": "我热爱编程和人工智能。",
+          "time_s": 0.12
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "source": "zh",
+          "target": "en",
+          "output": "The weather is lovely today; let's go for a walk in the park.",
+          "time_s": 0.29
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "source": "zh",
+          "target": "en",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.16
+        }
+      ]
+    },
+    "12b-Q8": {
+      "size_gb": 11.65,
+      "load_time_s": 2.71,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.22,
+          "chars_per_sec": 113.7,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 1.22,
+          "chars_per_sec": 225.3,
+          "result": "人工智能已经彻底改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既充满机遇，也面临挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 9.3,
+          "chars_per_sec": 221.3,
+          "result": "人工智能的历史可以追溯到古代，那时就存在着关于由技艺高超的工匠创造的、拥有智慧或意识的“人造生物”的传说、故事和传闻。现代人工智能的种子，是由那些试图将人类思维过程描述为符号的机械操作的哲学家们播下的。这项工作最终在20世纪40年代促成了可编程数字计算机的发明，这是一种基于数学推理抽象本质的机器。\n\n这一设备及其背后的理念激发了少数科学家开始认真探讨构建电子大脑的可能性。人工智能研究领域于1956年夏季在达特茅斯学院举办的一次研讨会上正式创立。参加研讨会的人们将在接下来的几十年里成为人工智能研究的领导者。其中许多人预测，在短短一代人内，就会出现一台像人类一样聪明的机器，并且他们获得了数百万美元的资金来将这一愿景变为现实。\n\n最终，商业开发商和研究人员明显低估了项目的难度。1974年，为了回应詹姆斯·莱特希尔的批评以及来自国会的持续压力，美国和英国政府停止了对人工智能的无方向性研究的资助，随之而来的是一段艰难的时期，后来被称为“人工智能寒冬”。七年后，日本政府的一项具有前瞻性的举措激励了政府和企业为人工智能提供数十亿美元的资金，但到了20世纪80年代末，投资者感到失望，再次撤回了资金。\n\n在21世纪的最初几十年，由于新的方法、强大的计算机硬件的应用以及海量数据集的收集，机器学习在学术界和工业界的应用取得了成功，从而推动了人工智能领域的投资和兴趣的蓬勃发展。深度学习领域大约在2012年开始在人工智能评测中占据主导地位，而生成式人工智能则在2022年随着ChatGPT的发布而广受欢迎。"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "source": "en",
+          "target": "zh",
+          "output": "你好，世界。",
+          "time_s": 0.14
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "source": "en",
+          "target": "ja",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.19
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "source": "en",
+          "target": "zh",
+          "output": "我热爱编程和人工智能。",
+          "time_s": 0.17
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "source": "zh",
+          "target": "en",
+          "output": "The weather is lovely today; let's go for a walk in the park.",
+          "time_s": 0.42
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "source": "zh",
+          "target": "en",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.23
+        }
+      ]
+    },
+    "27b-Q4": {
+      "size_gb": 15.41,
+      "load_time_s": 3.41,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.29,
+          "chars_per_sec": 85.3,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 1.52,
+          "chars_per_sec": 181.2,
+          "result": "人工智能已经改变了我们的生活和工作方式。从语音助手到自动驾驶汽车，人工智能无处不在。机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 12.94,
+          "chars_per_sec": 159.1,
+          "result": "人工智能的历史可以追溯到古代，那时就流传着各种神话、故事和传闻，讲述了技艺精湛的工匠创造出具有智能或意识的人工生命。现代人工智能的萌芽则源于哲学家们试图将人类思维过程描述为对符号进行机械操作。这项研究最终在 20 世纪 40 年代达到了高潮，诞生了可编程数字计算机，这是一种基于数学推理抽象本质的机器。\n\n这种设备及其背后的理念启发了一批科学家，他们开始认真探讨构建电子大脑的可能性。人工智能研究领域于 1956 年夏季在达特茅斯学院举办的一次研讨会上正式成立。参加研讨会的人将成为未来几十年人工智能研究领域的领军人物。他们中的许多人预测，在未来一两代人内，将会出现与人类一样智能的机器，为此，他们获得了数百万美元的资金，以期将这一愿景变为现实。\n\n最终，人们意识到，商业开发商和研究人员严重低估了该项目的难度。1974 年，为了回应詹姆斯·莱特希尔的批评以及来自国会的持续压力，美国和英国政府停止了对人工智能领域无特定目标的资助，随之而来的是一段艰难的时期，后来被称为“人工智能寒冬”。七年后，日本政府的一项富有远见的项目启发了各国政府和企业，为人工智能提供了数十亿美元的资金，但到了 20 世纪 80 年代末，投资者开始感到失望，并再次撤回了资金。\n\n在 21 世纪初的几十年里，由于新的方法、强大的计算机硬件的应用以及海量数据集的收集，机器学习在学术界和工业界成功应用于许多问题，人工智能的投资和兴趣迎来了蓬勃发展。深度学习领域于 2012 年左右开始在人工智能基准测试中占据主导地位，而生成式人工智能则随着 ChatGPT 的发布，于 2022 年广受欢迎。"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "source": "en",
+          "target": "zh",
+          "output": "你好，世界！",
+          "time_s": 0.16
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "source": "en",
+          "target": "ja",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.23
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "source": "en",
+          "target": "zh",
+          "output": "我喜欢编程和人工智能。",
+          "time_s": 0.23
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "source": "zh",
+          "target": "en",
+          "output": "The weather is lovely today; let’s go for a walk in the park.",
+          "time_s": 0.55
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "source": "zh",
+          "target": "en",
+          "output": "Artificial intelligence is changing the way we live.",
+          "time_s": 0.31
+        }
+      ]
+    },
+    "27b-Q8": {
+      "size_gb": 26.74,
+      "load_time_s": 5.68,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.45,
+          "chars_per_sec": 55.8,
+          "result": "你好，你今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 2.39,
+          "chars_per_sec": 115.0,
+          "result": "人工智能已经改变了我们的生活和工作方式。从语音助手到自动驾驶汽车，人工智能无处不在。机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 20.17,
+          "chars_per_sec": 102.1,
+          "result": "人工智能的历史可以追溯到古代，那时就流传着各种神话、故事和传闻，讲述了技艺精湛的工匠创造出具有智能或意识的人工生物。现代人工智能的萌芽则源于哲学家们，他们试图将人类的思维过程描述为一种对符号的机械操作。这项研究最终在 20 世纪 40 年代达到了顶峰，诞生了可编程的数字计算机，这是一种基于数学推理抽象本质的机器。\n\n这种设备及其背后的理念激发了一批科学家认真探讨构建电子大脑的可能性。人工智能研究领域于 1956 年夏季在达特茅斯学院举办的一次研讨会上正式成立。参加研讨会的人将成为未来几十年人工智能研究领域的领军人物。他们中的许多人预测，在不超过一代人的时间内，就会出现一台与人类一样智能的机器，为此，他们获得了数百万美元的资金，以期将这一愿景变为现实。\n\n最终，人们意识到，商业开发商和研究人员严重低估了该项目的难度。1974 年，为了回应詹姆斯·莱特希尔的批评以及来自国会的持续压力，美国和英国政府停止了对人工智能领域无特定方向研究的资助，随之而来的是一段艰难的时期，后来被称为“人工智能寒冬”。七年后，日本政府的一项富有远见的举措激励各国政府和产业界向人工智能领域投入数十亿美元，但到了 20 世纪 80 年代末，投资者们开始感到失望，并再次撤资。\n\n在 21 世纪初的几十年里，由于新的方法、强大的计算机硬件的应用以及海量数据集的收集，机器学习在学术界和工业界成功应用于解决许多问题，人工智能的投资和兴趣也随之激增。深度学习领域开始在 2012 年左右占据人工智能领域的主导地位，而生成式人工智能则在 2022 年随着 ChatGPT 的发布而广受欢迎。"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "source": "en",
+          "target": "zh",
+          "output": "你好，世界！",
+          "time_s": 0.24
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "source": "en",
+          "target": "ja",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.35
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "source": "en",
+          "target": "zh",
+          "output": "我喜欢编程和人工智能。",
+          "time_s": 0.35
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "source": "zh",
+          "target": "en",
+          "output": "The weather is really nice today; let’s go for a walk in the park.",
+          "time_s": 0.91
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "source": "zh",
+          "target": "en",
+          "output": "Artificial intelligence is changing the way we live.",
+          "time_s": 0.48
+        }
+      ]
+    }
+  }
+}

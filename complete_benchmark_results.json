@@ -1,0 +1,528 @@
+{
+  "timestamp": "2026-01-17T19:41:04.701914",
+  "gpu": "NVIDIA L40S × 2 (CUDA_VISIBLE_DEVICES=1,2)",
+  "models": {
+    "4b-Q4": {
+      "name": "4b-Q4",
+      "backend": "gguf",
+      "size_gb": 2.32,
+      "load_time_s": 1.14,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.26,
+          "chars_per_sec": 96.3,
+          "result": "您好，今天您怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 0.4,
+          "chars_per_sec": 694.1,
+          "result": "人工智能已经改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 3.1,
+          "chars_per_sec": 664.9,
+          "result": "人工智能的历史可以追溯到古代，那时，人们通过神话、故事和传闻，讲述了由工匠创造的具有智能或意识的虚构生物。现代人工智能的萌芽，则源于哲学家们，他们试图描述人类思维的过程，即通过对符号的机械操作。这项工作最终导致了 20 世纪 40 年代可编程数字计算机的发明，这是一种基于数学推理的抽象机器。\n\n这项设备以及相关的理念，激发了一批科学家认真探讨构建电子大脑的可能性。人工智能的研究领域，是在 1956"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界",
+          "time_s": 0.04
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気がとても良いです。",
+          "time_s": 0.07
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我非常喜欢编程和人工智能。",
+          "time_s": 0.07
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is so nice today, let's go for a walk in the park.",
+          "time_s": 0.15
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.08
+        }
+      ]
+    },
+    "4b-Q8": {
+      "name": "4b-Q8",
+      "backend": "gguf",
+      "size_gb": 3.85,
+      "load_time_s": 1.21,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.1,
+          "chars_per_sec": 239.6,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 0.51,
+          "chars_per_sec": 537.0,
+          "result": "人工智能已经改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 3.79,
+          "chars_per_sec": 543.9,
+          "result": "人工智能的历史可以追溯到古代，那时存在着关于由工匠创造的、具有智能或意识的“人工生物”的神话、故事和传闻。现代人工智能的萌芽，则源于那些哲学家，他们试图描述人类思维的过程，将其视为符号的机械操作。这一工作最终在20世纪40年代，发明了可编程的数字计算机，这是一种基于数学推理的抽象概念。\n\n这种设备以及相关的思想，激发了一批科学家开始认真探讨构建电子大脑的可能性。人工智能的研究领域，是在1956年夏"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界！",
+          "time_s": 0.05
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気がとても良いです。",
+          "time_s": 0.09
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我非常喜欢编程和人工智能。",
+          "time_s": 0.09
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is really nice today, let's go for a walk in the park.",
+          "time_s": 0.19
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.1
+        }
+      ]
+    },
+    "12b-Q4": {
+      "name": "12b-Q4",
+      "backend": "gguf",
+      "size_gb": 6.8,
+      "load_time_s": 1.84,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.16,
+          "chars_per_sec": 157.0,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 0.81,
+          "chars_per_sec": 340.7,
+          "result": "人工智能正在改变我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既充满机遇，也面临挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 6.46,
+          "chars_per_sec": 318.6,
+          "result": "人工智能的历史可以追溯到古代，那时就存在着关于由技艺精湛的工匠创造的、拥有智慧或意识的“人造生物”的传说、故事和传闻。现代人工智能的种子是由那些试图将人类思维过程描述为符号的机械操作的哲学家们所播下的。这项工作最终在20世纪40年代促成了可编程数字计算机的发明，这是一种基于数学推理抽象本质的机器。\n\n这一设备及其背后的理念激发了少数科学家开始认真探讨构建电子大脑的可能性。人工智能研究领域是在195"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界。",
+          "time_s": 0.1
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.12
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我热爱编程和人工智能。",
+          "time_s": 0.12
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is lovely today; let's go for a walk in the park.",
+          "time_s": 0.29
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.16
+        }
+      ]
+    },
+    "12b-Q8": {
+      "name": "12b-Q8",
+      "backend": "gguf",
+      "size_gb": 11.65,
+      "load_time_s": 2.75,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.22,
+          "chars_per_sec": 115.8,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 1.21,
+          "chars_per_sec": 227.2,
+          "result": "人工智能已经彻底改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既充满机遇，也面临挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 9.25,
+          "chars_per_sec": 222.6,
+          "result": "人工智能的历史可以追溯到古代，那时就存在着关于由技艺高超的工匠创造的、拥有智慧或意识的“人造生物”的传说、故事和传闻。现代人工智能的种子，是由那些试图将人类思维过程描述为符号的机械操作的哲学家们播下的。这项工作最终在20世纪40年代促成了可编程数字计算机的发明，这是一种基于数学推理抽象本质的机器。\n\n这一设备及其背后的理念激发了少数科学家开始认真探讨构建电子大脑的可能性。人工智能研究领域于1956"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界。",
+          "time_s": 0.14
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.19
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我热爱编程和人工智能。",
+          "time_s": 0.17
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is lovely today; let's go for a walk in the park.",
+          "time_s": 0.42
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 0.23
+        }
+      ]
+    },
+    "27b-Q4": {
+      "name": "27b-Q4",
+      "backend": "gguf",
+      "size_gb": 15.41,
+      "load_time_s": 3.5,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.29,
+          "chars_per_sec": 86.1,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 1.51,
+          "chars_per_sec": 182.0,
+          "result": "人工智能已经改变了我们的生活和工作方式。从语音助手到自动驾驶汽车，人工智能无处不在。机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 12.92,
+          "chars_per_sec": 159.3,
+          "result": "人工智能的历史可以追溯到古代，那时就流传着各种神话、故事和传闻，讲述了技艺精湛的工匠创造出具有智能或意识的人工生命。现代人工智能的萌芽则源于哲学家们试图将人类思维过程描述为对符号进行机械操作。这项研究最终在 20 世纪 40 年代达到了高潮，诞生了可编程数字计算机，这是一种基于数学推理抽象本质的机器。\n\n这种设备及其背后的理念启发了一批科学家，他们开始认真探讨构建电子大脑的可能性。人工智能研究领域"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界！",
+          "time_s": 0.16
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.23
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我喜欢编程和人工智能。",
+          "time_s": 0.23
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is lovely today; let’s go for a walk in the park.",
+          "time_s": 0.55
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is changing the way we live.",
+          "time_s": 0.31
+        }
+      ]
+    },
+    "27b-Q8": {
+      "name": "27b-Q8",
+      "backend": "gguf",
+      "size_gb": 26.74,
+      "load_time_s": 5.83,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 0.45,
+          "chars_per_sec": 56.1,
+          "result": "你好，你今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 2.39,
+          "chars_per_sec": 115.1,
+          "result": "人工智能已经改变了我们的生活和工作方式。从语音助手到自动驾驶汽车，人工智能无处不在。机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 20.15,
+          "chars_per_sec": 102.2,
+          "result": "人工智能的历史可以追溯到古代，那时就流传着各种神话、故事和传闻，讲述了技艺精湛的工匠创造出具有智能或意识的人工生物。现代人工智能的萌芽则源于哲学家们，他们试图将人类的思维过程描述为一种对符号的机械操作。这项研究最终在 20 世纪 40 年代达到了顶峰，诞生了可编程的数字计算机，这是一种基于数学推理抽象本质的机器。\n\n这种设备及其背后的理念激发了一批科学家认真探讨构建电子大脑的可能性。人工智能研究领"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界！",
+          "time_s": 0.24
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気が良いですね。",
+          "time_s": 0.35
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我喜欢编程和人工智能。",
+          "time_s": 0.35
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is really nice today; let’s go for a walk in the park.",
+          "time_s": 0.91
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is changing the way we live.",
+          "time_s": 0.48
+        }
+      ]
+    },
+    "4b-bf16": {
+      "name": "4b-bf16",
+      "backend": "pytorch",
+      "size_gb": 8.01,
+      "load_time_s": 14.76,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 29.63,
+          "chars_per_sec": 0.8,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 59.56,
+          "chars_per_sec": 4.6,
+          "result": "人工智能已经改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 127.11,
+          "chars_per_sec": 16.2,
+          "result": "人工智能的历史可以追溯到古代，那时，工匠们创造了具有智慧或意识的人造生物，这在神话、故事和传闻中都有体现。现代人工智能的萌芽，则源于那些哲学家，他们试图描述人类思维的过程，将其视为符号的机械操作。这一工作最终在 20 世纪 40 年代，发明了可编程的数字计算机，这是一种基于数学推理的抽象概念。\n\n这项设备以及相关的思想，激发了一批科学家开始认真探讨构建电子大脑的可能性。人工智能的研究领域，是在 1"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "大家好",
+          "time_s": 30.33
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気がとても良いです。",
+          "time_s": 30.88
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我非常喜欢编程和人工智能。",
+          "time_s": 30.56
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is really nice today, let's go for a walk in the park.",
+          "time_s": 30.39
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 30.24
+        }
+      ]
+    },
+    "12b-bf16": {
+      "name": "12b-bf16",
+      "backend": "pytorch",
+      "size_gb": 22.7,
+      "load_time_s": 21.65,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 42.86,
+          "chars_per_sec": 0.6,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 86.66,
+          "chars_per_sec": 3.2,
+          "result": "人工智能已经彻底改变了我们的生活和工作方式。\n从语音助手到自动驾驶汽车，人工智能无处不在。\n机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既充满机遇，也面临挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 181.46,
+          "chars_per_sec": 11.3,
+          "result": "人工智能的历史可以追溯到古代，那时就存在着关于由工匠创造、拥有智慧或意识的机器的传说、故事和传闻。现代人工智能的种子由那些试图描述人类思维过程为符号机械操作的哲学家所播下。这项工作最终在20世纪40年代促成了可编程数字计算机的发明，这是一种基于数学推理抽象本质的机器。\n\n这一设备及其背后的理念激发了少数科学家开始认真探讨构建电子大脑的可能性。人工智能研究领域于1956年夏季在达特茅斯学院举办的一次"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界。",
+          "time_s": 42.36
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気が良いですね。",
+          "time_s": 42.17
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我热爱编程和人工智能。",
+          "time_s": 42.18
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is lovely today; let's go for a walk in the park.",
+          "time_s": 42.25
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is transforming the way we live.",
+          "time_s": 41.91
+        }
+      ]
+    },
+    "27b-bf16": {
+      "name": "27b-bf16",
+      "backend": "pytorch",
+      "size_gb": 51.1,
+      "load_time_s": 9.26,
+      "tests": {
+        "short": {
+          "input_chars": 25,
+          "time_s": 54.58,
+          "chars_per_sec": 0.5,
+          "result": "您好，今天过得怎么样？"
+        },
+        "medium": {
+          "input_chars": 275,
+          "time_s": 111.48,
+          "chars_per_sec": 2.5,
+          "result": "人工智能已经改变了我们的生活和工作方式。从语音助手到自动驾驶汽车，人工智能无处不在。机器学习算法现在可以识别人脸、翻译语言，甚至可以编写代码。人工智能的未来既令人兴奋，也充满挑战。"
+        },
+        "long": {
+          "input_chars": 2059,
+          "time_s": 236.04,
+          "chars_per_sec": 8.7,
+          "result": "人工智能的历史可以追溯到古代，当时人们就流传着各种神话、故事和传闻，讲述了技艺精湛的工匠创造出具有智能或意识的人工生物。现代人工智能的萌芽则源于哲学家们试图将人类思维过程描述为一种对符号进行机械操作的过程。这项研究最终促成了 20 世纪 40 年代可编程数字计算机的发明，这种机器基于数学推理的抽象本质。\n\n这种设备及其背后的理念激发了一批科学家认真探讨构建电子大脑的可能性。人工智能研究领域于 19"
+        }
+      },
+      "quality_tests": [
+        {
+          "description": "Basic greeting",
+          "input": "Hello world",
+          "output": "你好，世界！",
+          "time_s": 56.21
+        },
+        {
+          "description": "Simple sentence",
+          "input": "The weather is beautiful today.",
+          "output": "今日は天気が良いですね。",
+          "time_s": 55.89
+        },
+        {
+          "description": "Technical terms",
+          "input": "I love programming and artificial intelligence.",
+          "output": "我喜欢编程和人工智能。",
+          "time_s": 55.76
+        },
+        {
+          "description": "Chinese to English",
+          "input": "今天天气真好，我们去公园散步吧。",
+          "output": "The weather is really nice today; let’s go for a walk in the park.",
+          "time_s": 55.75
+        },
+        {
+          "description": "Technical Chinese",
+          "input": "人工智能正在改变我们的生活方式。",
+          "output": "Artificial intelligence is changing the way we live.",
+          "time_s": 55.95
+        }
+      ]
+    }
+  }
+}

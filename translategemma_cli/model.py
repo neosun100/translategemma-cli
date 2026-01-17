@@ -28,6 +28,7 @@ from .config import (
     get_config,
     get_model_path,
     get_hf_model_id,
+    get_gguf_model_info,
     MODEL_SIZES,
     MODEL_INFO,
     DEFAULT_MODEL_SIZE,
@@ -35,47 +36,78 @@ from .config import (
 
 console = Console()
 
-# Backend types
-Backend = Literal["mlx", "pytorch"]
+# Backend types - now includes gguf
+Backend = Literal["mlx", "pytorch", "gguf"]
 
 
-def get_backend() -> Backend:
+def get_backend(model_format: str = "auto") -> Backend:
     """
     Detect platform and return appropriate backend.
     
+    Args:
+        model_format: "auto", "gguf", or "hf"
+    
     Returns:
-        "mlx" for macOS Apple Silicon, "pytorch" otherwise
+        "mlx" for macOS Apple Silicon with HF format
+        "gguf" if model_format is "gguf" or auto on Linux with llama-cpp available
+        "pytorch" otherwise
     """
     system = platform.system()
     machine = platform.machine()
     
+    # If explicitly requesting GGUF
+    if model_format == "gguf":
+        return "gguf"
+    
+    # macOS Apple Silicon: prefer MLX for HF models
     if system == "Darwin" and machine == "arm64":
-        # Check if MLX is available
         try:
             import mlx
             return "mlx"
         except ImportError:
-            return "pytorch"
+            pass
+    
+    # Linux: check if llama-cpp-python is available for auto mode
+    if model_format == "auto" and system == "Linux":
+        try:
+            from llama_cpp import Llama
+            return "gguf"
+        except ImportError:
+            pass
     
     return "pytorch"
 
 
-def is_model_ready(model_size: str | None = None) -> bool:
+def is_model_ready(model_size: str | None = None, model_format: str | None = None) -> bool:
     """
-    Check if the converted model exists.
+    Check if the model exists.
     
     Args:
         model_size: Model size to check. If None, uses config default.
+        model_format: Model format (gguf, hf). If None, uses config default.
     """
     config = get_config()
     size = model_size or config.model_size
-    model_path = get_model_path(size, config.quantization_bits)
+    fmt = model_format or config.model_format
     
-    if not model_path.exists():
-        return False
-    
-    # At minimum, check for config.json
-    return (model_path / "config.json").exists()
+    if fmt == "gguf" or (fmt == "auto" and get_backend("gguf") == "gguf"):
+        # Check for GGUF file
+        gguf_path = get_model_path(size, config.quantization_bits, "gguf")
+        return gguf_path.exists()
+    else:
+        # Check for HF model directory
+        model_path = get_model_path(size, config.quantization_bits, "hf")
+        if not model_path.exists():
+            return False
+        return (model_path / "config.json").exists()
+
+
+def is_gguf_model_ready(model_size: str | None = None) -> bool:
+    """Check if GGUF model exists."""
+    config = get_config()
+    size = model_size or config.model_size
+    gguf_path = get_model_path(size, config.quantization_bits, "gguf")
+    return gguf_path.exists()
 
 
 def list_downloaded_models() -> list[dict]:
@@ -84,16 +116,24 @@ def list_downloaded_models() -> list[dict]:
     models = []
     
     for size in MODEL_SIZES:
-        path = get_model_path(size, config.quantization_bits)
+        # Check HF format
+        hf_path = get_model_path(size, config.quantization_bits, "hf")
+        # Check GGUF format
+        gguf_path = get_model_path(size, config.quantization_bits, "gguf")
+        
         info = MODEL_INFO[size].copy()
         info["size"] = size
-        info["path"] = str(path)
-        info["downloaded"] = is_model_ready(size)
+        info["hf_path"] = str(hf_path)
+        info["gguf_path"] = str(gguf_path)
+        info["hf_downloaded"] = hf_path.exists() and (hf_path / "config.json").exists()
+        info["gguf_downloaded"] = gguf_path.exists()
+        info["downloaded"] = info["hf_downloaded"] or info["gguf_downloaded"]
         
-        if info["downloaded"]:
-            # Calculate actual size
-            total_size = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
-            info["actual_size_gb"] = round(total_size / (1024 ** 3), 2)
+        if info["hf_downloaded"]:
+            total_size = sum(f.stat().st_size for f in hf_path.rglob("*") if f.is_file())
+            info["hf_size_gb"] = round(total_size / (1024 ** 3), 2)
+        if info["gguf_downloaded"]:
+            info["gguf_size_gb"] = round(gguf_path.stat().st_size / (1024 ** 3), 2)
         
         models.append(info)
     
@@ -103,42 +143,108 @@ def list_downloaded_models() -> list[dict]:
 def download_and_convert_model(
     model_size: str | None = None,
     quantization_bits: int = 4,
+    model_format: str | None = None,
     force: bool = False,
 ) -> Path:
     """
-    Download TranslateGemma from HuggingFace and convert to optimized format.
+    Download TranslateGemma from HuggingFace.
     
     Args:
         model_size: Model size (4b, 12b, 27b). If None, uses config default.
         quantization_bits: Quantization level (4 or 8)
-        force: Force re-download and conversion even if model exists
+        model_format: Model format (gguf, hf, auto). If None, uses config default.
+        force: Force re-download even if model exists
         
     Returns:
-        Path to the converted model
+        Path to the model
     """
     config = get_config()
     size = model_size or config.model_size
+    fmt = model_format or config.model_format
     
     if size not in MODEL_SIZES:
         console.print(f"[red]Invalid model size: {size}[/red]")
         console.print(f"[dim]Available sizes: {', '.join(MODEL_SIZES)}[/dim]")
         raise SystemExit(1)
     
-    model_path = get_model_path(size, quantization_bits)
+    # Determine actual format
+    if fmt == "auto":
+        backend = get_backend("auto")
+        fmt = "gguf" if backend == "gguf" else "hf"
+    
+    if fmt == "gguf":
+        return _download_gguf(size, quantization_bits, force)
+    
+    # HF format
+    model_path = get_model_path(size, quantization_bits, "hf")
     hf_model_id = get_hf_model_id(size)
     
-    if is_model_ready(size) and not force:
+    if is_model_ready(size, "hf") and not force:
         console.print(f"[green]Model already available at {model_path}[/green]")
         return model_path
     
     console.print("[bold]Model not found locally.[/bold]\n")
     
-    backend = get_backend()
+    backend = get_backend("hf")
     
     if backend == "mlx":
         return _download_mlx(hf_model_id, model_path, quantization_bits)
     else:
         return _download_pytorch(hf_model_id, model_path, quantization_bits)
+
+
+def _download_gguf(model_size: str, quantization_bits: int, force: bool = False) -> Path:
+    """Download GGUF model from HuggingFace."""
+    from huggingface_hub import hf_hub_download
+    
+    config = get_config()
+    gguf_path = get_model_path(model_size, quantization_bits, "gguf")
+    
+    if gguf_path.exists() and not force:
+        console.print(f"[green]GGUF model already available at {gguf_path}[/green]")
+        return gguf_path
+    
+    repo, filename = get_gguf_model_info(model_size, quantization_bits)
+    
+    console.print(f"[cyan]Downloading GGUF model from {repo}...[/cyan]")
+    console.print(f"[dim]File: {filename}[/dim]\n")
+    
+    # Ensure parent directory exists
+    gguf_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Downloading...", total=None)
+        
+        try:
+            downloaded_path = hf_hub_download(
+                repo_id=repo,
+                filename=filename,
+                local_dir=gguf_path.parent,
+                local_dir_use_symlinks=False,
+            )
+            
+            # Rename to standard name if needed
+            downloaded = Path(downloaded_path)
+            if downloaded != gguf_path:
+                downloaded.rename(gguf_path)
+            
+            progress.update(task, completed=True)
+            
+        except Exception as e:
+            console.print(f"\n[red]Error downloading GGUF model: {e}[/red]")
+            console.print("\n[yellow]Troubleshooting:[/yellow]")
+            console.print(f"1. Check if the model exists: https://huggingface.co/{repo}")
+            console.print("2. Ensure you have internet connection")
+            raise SystemExit(1)
+    
+    console.print(f"\n[green]✓ GGUF model ready at {gguf_path}[/green]\n")
+    return gguf_path
 
 
 def _download_mlx(hf_model_id: str, model_path: Path, quantization_bits: int) -> Path:
@@ -389,29 +495,87 @@ def _download_pytorch(hf_model_id: str, model_path: Path, quantization_bits: int
     return model_path
 
 
-def load_model(model_size: str | None = None) -> tuple[Any, Any, Backend]:
+def load_model(model_size: str | None = None, model_format: str | None = None) -> tuple[Any, Any, Backend]:
     """
     Load the TranslateGemma model and tokenizer.
     
     Args:
         model_size: Model size to load. If None, uses config default.
+        model_format: Model format (gguf, hf, auto). If None, uses config default.
     
     Returns:
         Tuple of (model, tokenizer, backend)
     """
     config = get_config()
     size = model_size or config.model_size
-    model_path = get_model_path(size, config.quantization_bits)
+    fmt = model_format or config.model_format
     
-    if not is_model_ready(size):
-        download_and_convert_model(size)
+    # Determine actual format and backend
+    if fmt == "auto":
+        backend = get_backend("auto")
+        fmt = "gguf" if backend == "gguf" else "hf"
+    else:
+        backend = get_backend(fmt)
     
-    backend = get_backend()
+    # Download if needed
+    if fmt == "gguf":
+        if not is_gguf_model_ready(size):
+            download_and_convert_model(size, config.quantization_bits, "gguf")
+        return _load_gguf(size, config.quantization_bits)
+    
+    # HF format
+    model_path = get_model_path(size, config.quantization_bits, "hf")
+    
+    if not is_model_ready(size, "hf"):
+        download_and_convert_model(size, config.quantization_bits, "hf")
     
     if backend == "mlx":
         return _load_mlx(model_path)
     else:
         return _load_pytorch(model_path)
+
+
+def _load_gguf(model_size: str, quantization_bits: int) -> tuple[Any, Any, Backend]:
+    """Load model using llama-cpp-python backend."""
+    try:
+        from llama_cpp import Llama
+    except ImportError as e:
+        console.print(f"[red]Error importing llama-cpp-python: {e}[/red]")
+        console.print("\n[yellow]To fix, install llama-cpp-python:[/yellow]")
+        console.print("  pip install llama-cpp-python")
+        console.print("\n[dim]For GPU support:[/dim]")
+        console.print("  CMAKE_ARGS=\"-DGGML_CUDA=on\" pip install llama-cpp-python")
+        raise SystemExit(1)
+    
+    config = get_config()
+    gguf_path = get_model_path(model_size, quantization_bits, "gguf")
+    
+    if not gguf_path.exists():
+        console.print(f"[red]GGUF model not found at {gguf_path}[/red]")
+        console.print("[yellow]Run: translate model download --format gguf[/yellow]")
+        raise SystemExit(1)
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Loading GGUF model...", total=None)
+        
+        # Load model with llama-cpp
+        model = Llama(
+            model_path=str(gguf_path),
+            n_gpu_layers=config.gguf_n_gpu_layers,
+            n_ctx=config.gguf_n_ctx,
+            verbose=False,
+        )
+        
+        progress.update(task, description="Model ready")
+    
+    console.print("[dim]GGUF model loaded and ready.[/dim]\n")
+    
+    # For GGUF, we return model as both model and tokenizer (it handles both)
+    return model, model, "gguf"
 
 
 def _load_mlx(model_path: Path) -> tuple[Any, Any, Backend]:
@@ -530,23 +694,31 @@ def get_model_info(model_size: str | None = None) -> dict:
     """Get information about a model."""
     config = get_config()
     size = model_size or config.model_size
-    model_path = get_model_path(size, config.quantization_bits)
+    hf_path = get_model_path(size, config.quantization_bits, "hf")
+    gguf_path = get_model_path(size, config.quantization_bits, "gguf")
     hf_model_id = get_hf_model_id(size)
+    
+    hf_ready = is_model_ready(size, "hf")
+    gguf_ready = is_model_ready(size, "gguf")
     
     info = {
         "size": size,
         "hf_source": hf_model_id,
-        "local_path": str(model_path),
-        "ready": is_model_ready(size),
+        "hf_path": str(hf_path),
+        "gguf_path": str(gguf_path),
+        "ready": hf_ready or gguf_ready,
+        "hf_ready": hf_ready,
+        "gguf_ready": gguf_ready,
         "quantization_bits": config.quantization_bits,
         "backend": get_backend(),
         "params": MODEL_INFO[size]["params"],
     }
     
-    if info["ready"]:
-        # Calculate model size
-        total_size = sum(f.stat().st_size for f in model_path.rglob("*") if f.is_file())
+    if hf_ready:
+        total_size = sum(f.stat().st_size for f in hf_path.rglob("*") if f.is_file())
         info["size_gb"] = round(total_size / (1024 ** 3), 2)
+    elif gguf_ready:
+        info["size_gb"] = round(gguf_path.stat().st_size / (1024 ** 3), 2)
     
     return info
 

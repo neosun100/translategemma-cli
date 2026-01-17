@@ -20,7 +20,7 @@ LANG_CODE_MAP = {
 }
 
 # Extended backend type including server backends
-ExtendedBackend = Literal["mlx", "pytorch", "vllm", "ollama"]
+ExtendedBackend = Literal["mlx", "pytorch", "gguf", "vllm", "ollama"]
 
 
 class Translator:
@@ -46,10 +46,13 @@ class Translator:
             backend_type: Configured backend type (may be "auto")
             
         Returns:
-            Resolved backend: mlx, pytorch, vllm, or ollama
+            Resolved backend: mlx, pytorch, gguf, vllm, or ollama
         """
         if backend_type == "auto":
-            return get_local_backend()  # Returns "mlx" or "pytorch"
+            config = get_config()
+            return get_local_backend(config.model_format)  # Returns "mlx", "pytorch", or "gguf"
+        if backend_type == "gguf":
+            return "gguf"
         return backend_type
 
     def ensure_model_loaded(
@@ -116,7 +119,7 @@ class Translator:
             self._output_mode = config.output_mode
             return
         
-        # Local backends (mlx, pytorch)
+        # Local backends (mlx, pytorch, gguf)
         # Check if we need to switch models
         if self._model is not None and self._current_model_size == size:
             return
@@ -126,7 +129,14 @@ class Translator:
             self._model = None
             self._tokenizer = None
         
-        self._model, self._tokenizer, self._backend = load_model(size)
+        # Determine model format based on backend
+        if resolved_backend == "gguf":
+            model_format = "gguf"
+        elif resolved_backend in ("mlx", "pytorch"):
+            model_format = "hf"  # MLX and PyTorch use HuggingFace format
+        else:
+            model_format = None  # Let load_model decide
+        self._model, self._tokenizer, self._backend = load_model(size, model_format)
         self._current_model_size = size
         self._output_mode = config.output_mode
 
@@ -149,6 +159,11 @@ class Translator:
     def is_server_backend(self) -> bool:
         """Check if using a server backend (vLLM or Ollama)."""
         return self._backend in ("vllm", "ollama")
+
+    @property
+    def is_gguf_backend(self) -> bool:
+        """Check if using GGUF backend."""
+        return self._backend == "gguf"
 
     def set_force_target(self, target: str | None) -> None:
         """
@@ -178,6 +193,44 @@ class Translator:
     def _map_lang_code(self, code: str) -> str:
         """Map internal language code to TranslateGemma's format."""
         return LANG_CODE_MAP.get(code, code)
+
+    def _format_gguf_prompt(self, text: str, source_lang: str, target_lang: str) -> str:
+        """Format prompt for GGUF models (manual chat template)."""
+        # Language name mapping (subset of TranslateGemma's supported languages)
+        lang_names = {
+            "en": "English", "zh": "Chinese", "zh-TW": "Chinese", "zh-Hant-HK": "Chinese",
+            "ja": "Japanese", "ko": "Korean", "fr": "French", "de": "German",
+            "es": "Spanish", "pt": "Portuguese", "ru": "Russian", "ar": "Arabic",
+            "it": "Italian", "nl": "Dutch", "pl": "Polish", "vi": "Vietnamese",
+            "th": "Thai", "id": "Indonesian", "ms": "Malay", "tr": "Turkish",
+            "cs": "Czech", "el": "Greek", "he": "Hebrew", "hi": "Hindi",
+            "hu": "Hungarian", "sv": "Swedish", "da": "Danish", "fi": "Finnish",
+            "no": "Norwegian", "uk": "Ukrainian", "ro": "Romanian", "bg": "Bulgarian",
+            "hr": "Croatian", "sk": "Slovak", "sl": "Slovenian", "et": "Estonian",
+            "lv": "Latvian", "lt": "Lithuanian", "sr": "Serbian", "ca": "Catalan",
+            "gl": "Galician", "eu": "Basque", "bn": "Bengali", "ta": "Tamil",
+            "te": "Telugu", "mr": "Marathi", "gu": "Gujarati", "kn": "Kannada",
+            "ml": "Malayalam", "pa": "Punjabi", "ur": "Urdu", "fa": "Persian",
+            "sw": "Swahili", "af": "Afrikaans", "fil": "Filipino",
+        }
+        
+        source_code = self._map_lang_code(source_lang)
+        target_code = self._map_lang_code(target_lang)
+        source_name = lang_names.get(source_code, source_code)
+        target_name = lang_names.get(target_code, target_code)
+        
+        # Build prompt matching TranslateGemma's chat template format
+        prompt = (
+            f"<start_of_turn>user\n"
+            f"You are a professional {source_name} ({source_code}) to {target_name} ({target_code}) translator. "
+            f"Your goal is to accurately convey the meaning and nuances of the original {source_name} text "
+            f"while adhering to {target_name} grammar, vocabulary, and cultural sensitivities.\n"
+            f"Produce only the {target_name} translation, without any additional explanations or commentary. "
+            f"Please translate the following {source_name} text into {target_name}:\n\n\n"
+            f"{text.strip()}<end_of_turn>\n"
+            f"<start_of_turn>model\n"
+        )
+        return prompt
 
     def _format_messages(
         self, text: str, source_lang: str, target_lang: str
@@ -267,21 +320,26 @@ class Translator:
         elif self._backend == "ollama":
             response = self._generate_ollama(text, source_lang, target_lang, config.max_tokens)
         else:
-            # Local backends (mlx, pytorch)
+            # Local backends (mlx, pytorch, gguf)
             # Format messages
             messages = self._format_messages(text, source_lang, target_lang)
             
-            # Apply chat template
-            prompt = self._tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            
-            if self._backend == "mlx":
-                response = self._generate_mlx(prompt, config.max_tokens)
+            # For GGUF, we need to format the prompt manually
+            if self._backend == "gguf":
+                prompt = self._format_gguf_prompt(text, source_lang, target_lang)
+                response = self._generate_gguf(prompt, config.max_tokens)
             else:
-                response = self._generate_pytorch(prompt, config.max_tokens)
+                # Apply chat template for MLX/PyTorch
+                prompt = self._tokenizer.apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+                
+                if self._backend == "mlx":
+                    response = self._generate_mlx(prompt, config.max_tokens)
+                else:
+                    response = self._generate_pytorch(prompt, config.max_tokens)
         
         # Clean response based on mode
         if output_mode == "direct":
@@ -528,6 +586,37 @@ class Translator:
             outputs[0][inputs["input_ids"].shape[1]:],
             skip_special_tokens=True,
         )
+        
+        return response
+
+    def _generate_gguf(self, prompt: str, max_tokens: int) -> str:
+        """Generate response using llama-cpp-python backend."""
+        config = get_config()
+        
+        # Prepare generation kwargs
+        gen_kwargs = {
+            "max_tokens": max_tokens,
+            "echo": False,
+        }
+        
+        # Add sampling parameters
+        if config.temperature > 0.0:
+            gen_kwargs["temperature"] = config.temperature
+            if config.top_p < 1.0:
+                gen_kwargs["top_p"] = config.top_p
+            if config.top_k > 0:
+                gen_kwargs["top_k"] = config.top_k
+        else:
+            gen_kwargs["temperature"] = 0.0
+        
+        if config.repetition_penalty != 1.0:
+            gen_kwargs["repeat_penalty"] = config.repetition_penalty
+        
+        # Generate using llama-cpp
+        output = self._model(prompt, **gen_kwargs)
+        
+        # Extract text from response
+        response = output["choices"][0]["text"]
         
         return response
 

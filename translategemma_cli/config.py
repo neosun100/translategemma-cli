@@ -14,8 +14,12 @@ DEFAULT_CACHE_DIR = Path.home() / ".cache" / "translate"
 MODEL_SIZES = ("4b", "12b", "27b")
 DEFAULT_MODEL_SIZE = "27b"
 
+# Model format types
+ModelFormat = Literal["auto", "gguf", "hf"]
+DEFAULT_MODEL_FORMAT = "auto"
+
 # Backend types
-BackendType = Literal["auto", "mlx", "pytorch", "vllm", "ollama"]
+BackendType = Literal["auto", "mlx", "pytorch", "gguf", "vllm", "ollama"]
 DEFAULT_BACKEND = "auto"
 
 # Default server URLs
@@ -27,16 +31,31 @@ MODEL_INFO = {
         "hf_id": "google/translategemma-4b-it",
         "params": "5B",
         "quantized_size_gb": 3.2,
+        "gguf": {
+            "repo": "mradermacher/translategemma-4b-it-GGUF",
+            "q4": "translategemma-4b-it.Q4_K_M.gguf",
+            "q8": "translategemma-4b-it.Q8_0.gguf",
+        },
     },
     "12b": {
         "hf_id": "google/translategemma-12b-it",
         "params": "13B",
         "quantized_size_gb": 7.0,
+        "gguf": {
+            "repo": "mradermacher/translategemma-12b-it-GGUF",
+            "q4": "translategemma-12b-it.Q4_K_M.gguf",
+            "q8": "translategemma-12b-it.Q8_0.gguf",
+        },
     },
     "27b": {
         "hf_id": "google/translategemma-27b-it",
         "params": "29B",
         "quantized_size_gb": 14.8,
+        "gguf": {
+            "repo": "mradermacher/translategemma-27b-it-GGUF",
+            "q4": "translategemma-27b-it.Q4_K_M.gguf",
+            "q8": "translategemma-27b-it.Q8_0.gguf",
+        },
     },
 }
 
@@ -108,9 +127,19 @@ DEFAULT_LANGUAGES = ("yue", "en")
 CJK_LANGUAGES = {"yue", "zh", "zh-TW", "ja", "ko"}
 
 
-def get_model_path(model_size: str, quantization_bits: int = 4) -> Path:
+def get_model_path(model_size: str, quantization_bits: int = 4, model_format: str = "hf") -> Path:
     """Get the path for a specific model size and quantization."""
+    if model_format == "gguf":
+        return DEFAULT_CACHE_DIR / "models" / f"translategemma-{model_size}-it-Q{quantization_bits}.gguf"
     return DEFAULT_CACHE_DIR / "models" / f"translategemma-{model_size}-it-{quantization_bits}bit"
+
+
+def get_gguf_model_info(model_size: str, quantization_bits: int = 4) -> tuple[str, str]:
+    """Get GGUF repo and filename for a model size."""
+    info = MODEL_INFO[model_size]["gguf"]
+    repo = info["repo"]
+    filename = info[f"q{quantization_bits}"] if quantization_bits in (4, 8) else info["q4"]
+    return repo, filename
 
 
 def get_hf_model_id(model_size: str) -> str:
@@ -124,11 +153,17 @@ def get_default_config_data() -> dict:
         "model": {
             "name": DEFAULT_MODEL_SIZE,
             "quantization": 4,
+            "format": "auto",  # auto, gguf, hf (auto: gguf on Linux, mlx on macOS)
         },
         "backend": {
-            "type": DEFAULT_BACKEND,  # auto, mlx, pytorch, vllm, ollama
+            "type": DEFAULT_BACKEND,  # auto, mlx, pytorch, gguf, vllm, ollama
             "vllm_url": DEFAULT_VLLM_URL,
             "ollama_url": DEFAULT_OLLAMA_URL,
+            "gguf": {
+                "n_gpu_layers": -1,  # -1 = all layers on GPU
+                "n_ctx": 4096,       # context window
+                "n_threads": None,   # None = auto
+            },
         },
         "translation": {
             "languages": list(DEFAULT_LANGUAGES),
@@ -244,6 +279,29 @@ class Config:
         self._data["model"]["quantization"] = value
 
     @property
+    def model_format(self) -> str:
+        """Model format: auto, gguf, or hf."""
+        return self._data.get("model", {}).get("format", "auto")
+
+    @model_format.setter
+    def model_format(self, value: str) -> None:
+        if value not in ("auto", "gguf", "hf"):
+            raise ValueError("Model format must be 'auto', 'gguf', or 'hf'")
+        if "model" not in self._data:
+            self._data["model"] = {}
+        self._data["model"]["format"] = value
+
+    @property
+    def gguf_n_gpu_layers(self) -> int:
+        """Number of layers to offload to GPU for GGUF models."""
+        return self._data.get("backend", {}).get("gguf", {}).get("n_gpu_layers", -1)
+
+    @property
+    def gguf_n_ctx(self) -> int:
+        """Context window size for GGUF models."""
+        return self._data.get("backend", {}).get("gguf", {}).get("n_ctx", 4096)
+
+    @property
     def languages(self) -> tuple[str, str]:
         """Configured language pair."""
         langs = self._data.get("translation", {}).get("languages", list(DEFAULT_LANGUAGES))
@@ -278,15 +336,15 @@ class Config:
 
     @property
     def backend_type(self) -> BackendType:
-        """Backend type: auto, mlx, pytorch, vllm, or ollama."""
+        """Backend type: auto, mlx, pytorch, gguf, vllm, or ollama."""
         backend = self._data.get("backend", {}).get("type", DEFAULT_BACKEND)
-        valid_backends = ("auto", "mlx", "pytorch", "vllm", "ollama")
+        valid_backends = ("auto", "mlx", "pytorch", "gguf", "vllm", "ollama")
         return backend if backend in valid_backends else DEFAULT_BACKEND
 
     @backend_type.setter
     def backend_type(self, value: BackendType) -> None:
-        if value not in ("auto", "mlx", "pytorch", "vllm", "ollama"):
-            raise ValueError("Backend must be 'auto', 'mlx', 'pytorch', 'vllm', or 'ollama'")
+        if value not in ("auto", "mlx", "pytorch", "gguf", "vllm", "ollama"):
+            raise ValueError("Backend must be 'auto', 'mlx', 'pytorch', 'gguf', 'vllm', or 'ollama'")
         if "backend" not in self._data:
             self._data["backend"] = {}
         self._data["backend"]["type"] = value
@@ -345,7 +403,7 @@ class Config:
     @property
     def chunk_size(self) -> int:
         """Default chunk size for long text translation."""
-        return self._data.get("translation", {}).get("chunking", {}).get("chunk_size", 200)
+        return self._data.get("translation", {}).get("chunking", {}).get("chunk_size", 80)
     
     @chunk_size.setter
     def chunk_size(self, value: int) -> None:
@@ -360,7 +418,7 @@ class Config:
     @property
     def chunk_overlap(self) -> int:
         """Default overlap size for chunking."""
-        return self._data.get("translation", {}).get("chunking", {}).get("overlap", 50)
+        return self._data.get("translation", {}).get("chunking", {}).get("overlap", 10)
     
     @chunk_overlap.setter
     def chunk_overlap(self, value: int) -> None:

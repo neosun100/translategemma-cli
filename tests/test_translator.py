@@ -329,9 +329,11 @@ class TestTranslatorModelLoading:
         self, mock_load, mock_config, mock_model, mock_tokenizer
     ):
         """Test model not reloaded if already loaded."""
-        mock_load.return_value = (mock_model, mock_tokenizer, "mlx")
+        mock_load.return_value = (mock_model, mock_tokenizer, "pytorch")
         
         translator = Translator()
+        # Mock _resolve_backend to return consistent value
+        translator._resolve_backend = lambda x: "pytorch"
         translator.ensure_model_loaded()
         translator.ensure_model_loaded()
         

@@ -47,6 +47,10 @@ cuda = [
     "torch>=2.0.0,<3.0",
     "bitsandbytes>=0.41.0,<1.0",
 ]
+# GGUF backend (llama-cpp-python)
+gguf = [
+    "llama-cpp-python>=0.2.0",
+]
 # CPU-only (PyTorch)
 cpu = [
     "torch>=2.0.0,<3.0",
