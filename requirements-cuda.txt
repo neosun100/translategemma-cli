@@ -1,0 +1,13 @@
+# TranslateGemma CLI - Linux/Windows with NVIDIA GPU (PyTorch + CUDA)
+# Requires CUDA 11.8+ and compatible NVIDIA GPU
+#
+# Install: pip install -r requirements-cuda.txt
+
+# Core dependencies
+-r requirements.txt
+
+# PyTorch with CUDA support
+torch>=2.0.0
+
+# Quantization support for NVIDIA GPUs
+bitsandbytes>=0.41.0

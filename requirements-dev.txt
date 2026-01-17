@@ -1,0 +1,16 @@
+# TranslateGemma CLI - Development Dependencies
+#
+# Install: pip install -r requirements-dev.txt
+
+# Core dependencies
+-r requirements.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Code formatting
+black>=23.0.0
+
+# Linting
+ruff>=0.1.0

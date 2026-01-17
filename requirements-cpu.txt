@@ -1,0 +1,10 @@
+# TranslateGemma CLI - CPU Only (PyTorch)
+# For Linux/Windows without GPU acceleration
+#
+# Install: pip install -r requirements-cpu.txt
+
+# Core dependencies
+-r requirements.txt
+
+# PyTorch (CPU version)
+torch>=2.0.0

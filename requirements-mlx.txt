@@ -1,0 +1,11 @@
+# TranslateGemma CLI - macOS Apple Silicon (MLX Backend)
+# For M1/M2/M3/M4 Macs
+#
+# Install: pip install -r requirements-mlx.txt
+
+# Core dependencies
+-r requirements.txt
+
+# MLX framework (Apple Silicon only)
+mlx>=0.22.0
+mlx-lm>=0.20.0
