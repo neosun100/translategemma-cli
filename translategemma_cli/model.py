@@ -481,44 +481,43 @@ def _load_pytorch(model_path: Path) -> tuple[Any, Any, Backend]:
         
         device = "cuda" if torch.cuda.is_available() else "cpu"
         
-        tokenizer = AutoTokenizer.from_pretrained(str(model_path))
+        # Get HuggingFace model ID from model_path
+        # model_path is like: ~/.cache/translate/models/translategemma-27b-it-4bit
+        model_name = model_path.name  # translategemma-27b-it-4bit
+        # Extract base name without quantization suffix
+        base_name = model_name.rsplit('-', 1)[0] if model_name.endswith('bit') else model_name
+        hf_model_id = f"google/{base_name}"
         
-        # Try loading with bitsandbytes quantization first, fallback to standard loading
-        model = None
-        bnb_available, _ = _check_bitsandbytes()
+        progress.update(task, description=f"Loading from {hf_model_id}...")
         
-        if device == "cuda" and bnb_available:
-            try:
-                # Try loading as quantized model
-                model = AutoModelForCausalLM.from_pretrained(
-                    str(model_path),
-                    device_map="auto",
-                    trust_remote_code=True,
-                )
-            except Exception:
-                # Fallback to standard loading
-                pass
+        # Load tokenizer from HuggingFace
+        tokenizer = AutoTokenizer.from_pretrained(hf_model_id)
         
-        if model is None:
-            # Standard loading without quantization
+        # Load model with bfloat16 (no quantization - more stable for TranslateGemma)
+        # Note: 27B model requires ~54GB VRAM, may need multiple GPUs
+        if device == "cuda":
             model = AutoModelForCausalLM.from_pretrained(
-                str(model_path),
-                torch_dtype=torch.float16 if device == "cuda" else torch.float32,
-                device_map="auto" if device == "cuda" else None,
+                hf_model_id,
+                dtype=torch.bfloat16,
+                device_map="auto",
+                trust_remote_code=True,
+            )
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                hf_model_id,
+                torch_dtype=torch.float32,
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
             )
-            
-            if device == "cpu":
-                model = model.to(device)
+            model = model.to(device)
         
         # Warmup: Run a small inference to initialize CUDA kernels
         progress.update(task, description="Warming up...")
         inputs = tokenizer("Hello", return_tensors="pt")
         if device == "cuda":
-            inputs = {k: v.to(device) for k, v in inputs.items()}
+            inputs = {k: v.to("cuda:0") for k, v in inputs.items()}
         with torch.no_grad():
-            _ = model.generate(**inputs, max_new_tokens=1)
+            _ = model.generate(**inputs, max_new_tokens=1, do_sample=False)
         
         progress.update(task, description="Model ready")
     

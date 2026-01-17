@@ -299,8 +299,23 @@ vim ~/.config/translate/config.yaml
 - 8GB+ 统一内存 (4b), 16GB+ (12b), 32GB+ (27b)
 - macOS 14.0+
 
-### Linux / Windows
-- NVIDIA GPU 8GB+ 显存（或 CPU 16GB+ 内存）
+### Linux (NVIDIA GPU) ⚠️ 重要
+
+> **注意**: TranslateGemma-27b 在 Linux 上需要**多个 GPU**，因为 bitsandbytes 量化存在兼容性问题。详见 [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md)。
+
+- **27b 模型**: 2x GPU，每卡 ≥32GB 显存（如 A100、L40S、RTX 4090×3）
+- **12b 模型**: 1x GPU，≥24GB 显存
+- **4b 模型**: 1x GPU，≥16GB 显存
+- CUDA 11.8+
+- Python 3.11+
+
+```bash
+# Linux 多 GPU 使用方式（27b 模型必需）
+CUDA_VISIBLE_DEVICES=1,2 translate --text "Hello world"
+```
+
+### Windows
+- NVIDIA GPU 16GB+ 显存
 - CUDA 11.8+（GPU 版本）
 
 ### 所有平台

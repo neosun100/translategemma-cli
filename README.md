@@ -299,8 +299,23 @@ vim ~/.config/translate/config.yaml
 - 8GB+ unified memory (4b), 16GB+ (12b), 32GB+ (27b)
 - macOS 14.0+
 
-### Linux / Windows
-- NVIDIA GPU with 8GB+ VRAM (or CPU with 16GB+ RAM)
+### Linux (NVIDIA GPU) ⚠️ Important
+
+> **Note**: TranslateGemma-27b requires **multiple GPUs** on Linux due to quantization compatibility issues. See [LINUX_DEPLOYMENT.md](LINUX_DEPLOYMENT.md) for details.
+
+- **27b model**: 2x GPUs with ≥32GB VRAM each (e.g., A100, L40S, RTX 4090×3)
+- **12b model**: 1x GPU with ≥24GB VRAM
+- **4b model**: 1x GPU with ≥16GB VRAM
+- CUDA 11.8+
+- Python 3.11+
+
+```bash
+# Linux multi-GPU usage (required for 27b model)
+CUDA_VISIBLE_DEVICES=1,2 translate --text "Hello world"
+```
+
+### Windows
+- NVIDIA GPU with 16GB+ VRAM
 - CUDA 11.8+ (for GPU)
 
 ### All Platforms
@@ -747,6 +762,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file.
 
 ---
 
-**Version**: 0.2.0  
+**Version**: 0.2.1  
 **Last Updated**: 2026-01-17  
 **Status**: Production Ready ✅
