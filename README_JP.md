@@ -121,6 +121,8 @@ curl http://localhost:8022/health
 
 `http://localhost:8022` で Web インターフェースにアクセス：
 
+![TranslateGemma Web UI](docs/screenshot.png)
+
 **機能：**
 - 🎨 ダーク/ライトテーマ切り替え
 - 🔄 言語スワップボタン

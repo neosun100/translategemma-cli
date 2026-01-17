@@ -121,6 +121,8 @@ curl http://localhost:8022/health
 
 访问 `http://localhost:8022` 使用 Web 界面：
 
+![TranslateGemma Web UI](docs/screenshot.png)
+
 **功能特性：**
 - 🎨 深色/浅色主题切换
 - 🔄 语言交换按钮

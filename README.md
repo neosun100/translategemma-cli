@@ -95,6 +95,8 @@ docker-compose up -d
 
 Access the beautiful web interface at `http://localhost:8022`:
 
+![TranslateGemma Web UI](docs/screenshot.png)
+
 **Features:**
 - 🎨 Dark/Light theme toggle
 - 🔄 Language swap button
