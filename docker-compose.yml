@@ -1,0 +1,29 @@
+services:
+  translategemma:
+    build: .
+    image: neosun/translategemma:latest
+    container_name: translategemma
+    ports:
+      - "0.0.0.0:${PORT:-8022}:8022"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+      - MODEL_NAME=${MODEL_NAME:-12b}
+      - QUANTIZATION=${QUANTIZATION:-4}
+      - BACKEND=${BACKEND:-gguf}
+      - GPU_IDLE_TIMEOUT=${GPU_IDLE_TIMEOUT:-300}
+      - MAX_CHUNK_LENGTH=${MAX_CHUNK_LENGTH:-80}
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://huggingface.co}
+      - HF_HUB_ENABLE_HF_TRANSFER=1
+      - HF_HOME=/app/models
+    volumes:
+      - ~/.cache/translate/models:/app/models
+      - ~/.cache/translate/models:/root/.cache/translate/models
+      - /tmp/translategemma:/tmp/translategemma
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${NVIDIA_VISIBLE_DEVICES:-0}"]
+              capabilities: [gpu]
