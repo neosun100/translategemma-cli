@@ -1,5 +1,149 @@
 # TranslateGemma Docker Deployment Guide
 
+## Docker Images
+
+| Image | Size | Description |
+|-------|------|-------------|
+| `neosun/translategemma:v1.0.0-allinone` | ~82GB | **All-in-One** - includes all 6 models (4B/12B/27B × Q4/Q8) |
+| `neosun/translategemma:latest-allinone` | ~82GB | Same as above, latest tag |
+| `neosun/translategemma:v1.0.0` | ~10GB | Lightweight - models downloaded on first use |
+| `neosun/translategemma:latest` | ~10GB | Same as above, latest tag |
+
+## Quick Start (All-in-One)
+
+```bash
+# Pull the all-in-one image (includes all models)
+docker pull neosun/translategemma:v1.0.0-allinone
+
+# Run with GPU
+docker run -d --gpus '"device=0"' \
+  -p 8022:8022 \
+  -e MODEL_NAME=27b \
+  -e QUANTIZATION=8 \
+  --name translategemma \
+  neosun/translategemma:v1.0.0-allinone
+
+# Test
+curl -X POST http://localhost:8022/api/translate \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello world", "target_lang": "zh"}'
+```
+
+## Docker Compose (Recommended)
+
+### All-in-One Version
+
+```yaml
+# docker-compose.allinone.yml
+services:
+  translategemma:
+    image: neosun/translategemma:v1.0.0-allinone
+    container_name: translategemma
+    ports:
+      - "8022:8022"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+      - MODEL_NAME=27b
+      - QUANTIZATION=8
+      - BACKEND=gguf
+      - GPU_IDLE_TIMEOUT=0
+      - MAX_CHUNK_LENGTH=100
+      - DEFAULT_OVERLAP=0
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+```
+
+### Lightweight Version (Models Downloaded on Demand)
+
+```yaml
+# docker-compose.yml
+services:
+  translategemma:
+    image: neosun/translategemma:latest
+    container_name: translategemma
+    ports:
+      - "8022:8022"
+    environment:
+      - MODEL_NAME=27b
+      - QUANTIZATION=8
+    volumes:
+      - ~/.cache/translate/models:/root/.cache/translate/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MODEL_NAME` | `27b` | Model size: `4b`, `12b`, `27b` |
+| `QUANTIZATION` | `8` | Quantization: `4` or `8` |
+| `BACKEND` | `gguf` | Backend: `gguf`, `pytorch` |
+| `GPU_IDLE_TIMEOUT` | `0` | Seconds before unloading model (0=immediate) |
+| `MAX_CHUNK_LENGTH` | `100` | Max characters per chunk |
+| `DEFAULT_OVERLAP` | `0` | Sliding window overlap (0=disabled) |
+
+## GPU Memory Requirements
+
+| Model | VRAM Required |
+|-------|---------------|
+| 4B-Q4 | ~3GB |
+| 4B-Q8 | ~5GB |
+| 12B-Q4 | ~7GB |
+| 12B-Q8 | ~12GB |
+| 27B-Q4 | ~15GB |
+| 27B-Q8 | ~28GB |
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/api/config` | GET | Get configuration |
+| `/api/models` | GET | List available models |
+| `/api/translate` | POST | Translate text |
+| `/api/translate/stream` | POST | Stream translation |
+| `/api/gpu/status` | GET | GPU status |
+
+## Web UI
+
+Access the web interface at: `http://localhost:8022`
+
+## MCP Server
+
+The container also includes an MCP server for integration with AI assistants:
+
+```bash
+# Run MCP server
+docker exec translategemma python mcp_server.py
+```
+
+## Troubleshooting
+
+### Out of Memory Error
+- Use a smaller model (4B or 12B)
+- Use Q4 quantization instead of Q8
+- Check GPU memory with `nvidia-smi`
+
+### Model Loading Slow
+- First load takes time to initialize CUDA
+- Subsequent loads are faster
+
+### Translation Truncated
+- Ensure `MAX_CHUNK_LENGTH=100` (not higher)
+- This is a known TranslateGemma model limitation
+
 ## Quick Start
 
 ```bash

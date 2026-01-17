@@ -3,12 +3,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Docker
-.env
-
-# Temporary files
-/tmp/
-
 # C extensions
 *.so
 
@@ -61,6 +55,7 @@ pytest_cache/
 
 # Environments
 .env
+.env.local
 .venv
 env/
 venv/
@@ -105,6 +100,11 @@ cython_debug/
 .LSOverride
 ._*
 
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
 # Model files (large files, downloaded separately)
 *.safetensors
 *.bin
@@ -124,7 +124,6 @@ models/
 config.local.yaml
 
 # Secrets / credentials
-.env.local
 *.key
 *.pem
 secrets/
@@ -137,3 +136,8 @@ logs/
 tmp/
 temp/
 *.tmp
+/tmp/
+
+# Benchmark results (generated)
+benchmark_results.json
+complete_benchmark_results.json

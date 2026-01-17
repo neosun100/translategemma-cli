@@ -67,7 +67,11 @@ dev = [
 translate = "translategemma_cli.cli:app"
 
 [project.urls]
-"Homepage" = "https://github.com/jhkchan/translategemma-cli"
+"Homepage" = "https://github.com/neosun100/translategemma"
+"Documentation" = "https://github.com/neosun100/translategemma#readme"
+"Repository" = "https://github.com/neosun100/translategemma"
+"Bug Tracker" = "https://github.com/neosun100/translategemma/issues"
+"Docker Hub" = "https://hub.docker.com/r/neosun/translategemma"
 
 [tool.setuptools.packages.find]
 where = ["."]

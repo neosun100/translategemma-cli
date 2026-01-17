@@ -3,113 +3,549 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TranslateGemma 翻译服务</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>TranslateGemma 翻译服务 v2</title>
+    <style>
+        :root { --bg: #f5f5f5; --card: #fff; --text: #333; --border: #ddd; --primary: #4a90d9; --success: #52c41a; --warning: #faad14; }
+        .dark { --bg: #1a1a2e; --card: #16213e; --text: #eee; --border: #333; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px; transition: all 0.3s; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { font-size: 1.5rem; }
+        .controls { display: flex; gap: 10px; align-items: center; }
+        select, button, input, textarea { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 14px; }
+        button { cursor: pointer; background: var(--primary); color: #fff; border: none; }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .main { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .main { grid-template-columns: 1fr; } }
+        .panel { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .panel h3 { margin-bottom: 15px; font-size: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        textarea { width: 100%; height: 200px; resize: vertical; font-size: 16px; line-height: 1.6; }
+        .lang-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .lang-row select { flex: 1; }
+        .swap-btn { background: var(--card); color: var(--text); border: 1px solid var(--border); padding: 8px 15px; }
+        .actions { display: flex; gap: 10px; margin-top: 15px; }
+        .actions button { flex: 1; padding: 12px; font-size: 16px; }
+        .btn-stream { background: #28a745; }
+        .stats { font-size: 12px; color: #888; margin-top: 10px; padding: 10px; background: var(--bg); border-radius: 6px; }
+        .stats span { margin-right: 15px; }
+        .stats .highlight { color: var(--primary); font-weight: bold; }
+        details { margin-top: 15px; }
+        summary { cursor: pointer; color: var(--primary); font-size: 14px; }
+        .params { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-top: 12px; }
+        .param label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+        .param input { width: 100%; }
+        .param input[type="range"] { padding: 0; }
+        .param .value { font-size: 11px; color: var(--primary); float: right; }
+        .gpu-bar { margin-top: 20px; padding: 15px; background: var(--card); border-radius: 8px; }
+        .gpu-bar h4 { font-size: 14px; margin-bottom: 10px; }
+        .gpu-info { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; align-items: center; }
+        .gpu-info span { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.on { background: var(--success); }
+        .dot.off { background: #999; }
+        .dot.loading { background: var(--warning); animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        #loading { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+        .spinner { border: 3px solid #333; border-top-color: var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .copy-btn { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 4px 10px; font-size: 12px; }
+        .progress-bar { height: 4px; background: var(--border); border-radius: 2px; margin: 10px 0; overflow: hidden; display: none; }
+        .progress-fill { height: 100%; background: var(--primary); transition: width 0.3s; width: 0%; }
+        .file-upload { border: 2px dashed var(--border); border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; margin-bottom: 10px; font-size: 13px; }
+        .file-upload:hover { border-color: var(--primary); }
+        .file-upload.dragover { border-color: var(--primary); background: rgba(74,144,217,0.1); }
+        .file-upload input { display: none; }
+        .chunk-item { padding: 8px; margin: 4px 0; background: var(--bg); border-left: 3px solid var(--primary); border-radius: 0 4px 4px 0; font-size: 14px; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* 模型选择器样式 */
+        .model-selector { margin-bottom: 20px; padding: 15px; background: var(--card); border-radius: 8px; }
+        .model-selector h4 { font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .model-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .model-card { padding: 12px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .model-card:hover { border-color: var(--primary); }
+        .model-card.active { border-color: var(--primary); background: rgba(74,144,217,0.1); }
+        .model-card.loading { border-color: var(--warning); }
+        .model-card .name { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
+        .model-card .info { font-size: 11px; color: #888; }
+        .model-card .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; }
+        .badge-size { background: #e3f2fd; color: #1976d2; }
+        .badge-quant { background: #fff3e0; color: #f57c00; }
+        .badge-quality { background: #e8f5e9; color: #388e3c; }
+        .badge-best { background: #fce4ec; color: #c2185b; }
+        .dark .badge-size { background: #1565c0; color: #fff; }
+        .dark .badge-quant { background: #ef6c00; color: #fff; }
+        .dark .badge-quality { background: #2e7d32; color: #fff; }
+        .dark .badge-best { background: #ad1457; color: #fff; }
+    </style>
 </head>
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-left">
-            <span class="logo">🌐</span>
-            <h1>TranslateGemma 翻译服务</h1>
-        </div>
-        <div class="header-right">
-            <button id="theme-toggle" class="icon-btn" title="切换主题">🌙</button>
-            <a href="/docs" target="_blank" class="btn-api">📚 API文档</a>
-        </div>
-    </header>
+<body class="dark">
+    <div class="container">
+        <header>
+            <h1>🌐 TranslateGemma 翻译服务</h1>
+            <div class="controls">
+                <button onclick="toggleTheme()" title="切换主题">🌓</button>
+                <a href="/docs" target="_blank"><button type="button">📚 API文档</button></a>
+            </div>
+        </header>
 
-    <main class="container">
-        <!-- Model Selection -->
-        <section class="section">
-            <h2 class="section-title">🤖 选择模型</h2>
+        <!-- 模型选择器 -->
+        <div class="model-selector">
+            <h4>🤖 选择模型 <span id="model-loading" style="display:none;color:var(--warning);font-size:12px;">加载中...</span></h4>
             <div class="model-grid" id="model-grid"></div>
-        </section>
+        </div>
 
-        <!-- Translation Area -->
-        <div class="translation-container">
-            <!-- Source -->
-            <section class="panel">
-                <div class="panel-header">
-                    <h3>源文本</h3>
-                    <button class="btn-copy" onclick="copySource()">复制</button>
+        <div class="main">
+            <div class="panel">
+                <h3>源文本 <button class="copy-btn" onclick="copyText('source')">复制</button></h3>
+                
+                <div class="file-upload" id="dropZone">
+                    📁 拖拽文本文件或点击上传
+                    <input type="file" id="fileInput" accept=".txt,.md,.text">
                 </div>
                 
-                <div class="file-upload" id="file-drop">
-                    <input type="file" id="file-input" accept=".txt,.md" hidden>
-                    <span>📁 拖拽文本文件或点击上传</span>
-                </div>
-
-                <div class="lang-selector">
-                    <select id="source-lang">
-                        <option value="auto">自动检测</option>
-                    </select>
-                    <button class="btn-swap" onclick="swapLangs()">⇄</button>
+                <div class="lang-row">
+                    <select id="source-lang"></select>
+                    <button class="swap-btn" onclick="swapLang()">⇄</button>
                     <select id="target-lang"></select>
                 </div>
-
-                <textarea id="source-text" placeholder="输入要翻译的文本..."></textarea>
-            </section>
-
-            <!-- Result -->
-            <section class="panel">
-                <div class="panel-header">
-                    <h3>翻译结果</h3>
-                    <button class="btn-copy" onclick="copyResult()">复制</button>
-                </div>
-                <div id="result-text" class="result-area">翻译结果将显示在这里...</div>
-            </section>
-        </div>
-
-        <!-- Advanced Settings -->
-        <details class="section advanced" open>
-            <summary class="section-title">⚙️ 高级参数</summary>
-            <div class="params-grid">
-                <div class="param">
-                    <label>Temperature <span id="temp-val">0.0</span></label>
-                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="0">
-                </div>
-                <div class="param">
-                    <label>Top-P <span id="topp-val">1.0</span></label>
-                    <input type="range" id="top-p" min="0" max="1" step="0.1" value="1">
-                </div>
-                <div class="param">
-                    <label>Top-K <span id="topk-val">0</span></label>
-                    <input type="range" id="top-k" min="0" max="100" step="1" value="0">
-                </div>
-                <div class="param">
-                    <label>重复惩罚 <span id="rep-val">1.0</span></label>
-                    <input type="range" id="repetition" min="1" max="2" step="0.05" value="1">
+                <textarea id="source" placeholder="输入要翻译的文本..."></textarea>
+                
+                <details>
+                    <summary>⚙️ 高级参数</summary>
+                    <div class="params">
+                        <div class="param">
+                            <label>Chunk Size <span class="value" id="chunk-val">80</span></label>
+                            <input type="range" id="chunk_size" min="40" max="150" step="10" value="80" oninput="updateVal('chunk-val', this.value)">
+                        </div>
+                        <div class="param">
+                            <label>Overlap <span class="value" id="overlap-val">10</span></label>
+                            <input type="range" id="overlap" min="0" max="30" step="5" value="10" oninput="updateVal('overlap-val', this.value)">
+                        </div>
+                        <div class="param">
+                            <label>Max Tokens <span class="value" id="tokens-val">512</span></label>
+                            <input type="range" id="max_tokens" min="256" max="2048" step="128" value="512" oninput="updateVal('tokens-val', this.value)">
+                        </div>
+                    </div>
+                </details>
+                
+                <div class="actions">
+                    <button onclick="doTranslate(false)" id="translate-btn">🚀 翻译</button>
+                    <button onclick="doTranslate(true)" id="stream-btn" class="btn-stream">⚡ 流式</button>
+                    <button onclick="clearAll()" style="background:#666;flex:0.5;">清空</button>
                 </div>
             </div>
-        </details>
 
-        <!-- Action Buttons -->
-        <div class="actions">
-            <button class="btn btn-primary" onclick="translate()">🚀 翻译</button>
-            <button class="btn btn-stream" onclick="translateStream()">⚡ 流式</button>
-            <button class="btn btn-clear" onclick="clearAll()">清空</button>
-        </div>
-
-        <!-- Progress -->
-        <div id="progress" class="progress hidden">
-            <div class="progress-bar"><div id="progress-fill"></div></div>
-            <span id="progress-text"></span>
-        </div>
-
-        <!-- GPU Status -->
-        <section class="gpu-status">
-            <span class="status-title">🖥️ GPU 状态</span>
-            <div class="status-items">
-                <span id="gpu-loaded">● 未加载</span>
-                <span id="gpu-mem">📊 显存: - / - MB</span>
-                <span id="gpu-idle">⏱️ 空闲: 0秒</span>
-                <span id="gpu-model">🤖 当前模型: -</span>
-                <button class="btn-release" onclick="releaseGPU()">释放显存</button>
+            <div class="panel">
+                <h3>翻译结果 <button class="copy-btn" onclick="copyText('result')">复制</button></h3>
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-info" id="progressInfo" style="display:none;font-size:12px;color:#888;margin-bottom:10px;">
+                    <span>📦 进度: <span id="progress-current">0</span>/<span id="progress-total">0</span> 段</span>
+                    <span style="margin-left:15px;">⏱️ 已用: <span id="progress-elapsed">0</span>s</span>
+                </div>
+                <textarea id="result" readonly placeholder="翻译结果将显示在这里..."></textarea>
+                <div id="streamOutput" style="display:none;max-height:200px;overflow-y:auto;"></div>
+                <div class="stats" id="stats" style="display:none;">
+                    <span>⏱️ 耗时: <span class="highlight" id="stat-time">-</span></span>
+                    <span>📝 输入: <span id="stat-input">-</span> 字符</span>
+                    <span>📄 输出: <span id="stat-output">-</span> 字符</span>
+                    <span>📦 分段: <span id="stat-chunks">-</span></span>
+                    <span>🤖 模型: <span id="stat-model">-</span></span>
+                </div>
             </div>
-        </section>
-    </main>
+        </div>
 
-    <script src="/static/app.js"></script>
+        <div class="gpu-bar">
+            <h4>🖥️ GPU 状态</h4>
+            <div class="gpu-info">
+                <span><span class="dot" id="gpu-dot"></span> <span id="gpu-status">检查中...</span></span>
+                <span>💾 显存: <span id="gpu-mem">-</span></span>
+                <span>⏰ 空闲: <span id="gpu-idle">-</span></span>
+                <span>🤖 当前模型: <span id="gpu-model">-</span></span>
+                <button onclick="releaseGPU()" style="padding:4px 10px;font-size:12px;">释放显存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading"><div class="spinner"></div></div>
+
+    <script>
+        const LANGS = {};
+        let MODELS = {};
+        let currentModel = null;
+        let defaultModel = null;
+        
+        async function init() {
+            // 加载语言列表
+            try {
+                const langs = await fetch('/api/languages').then(r => r.json());
+                Object.assign(LANGS, langs);
+                
+                const srcSel = document.getElementById('source-lang');
+                const tgtSel = document.getElementById('target-lang');
+                srcSel.innerHTML = '<option value="">自动检测</option>';
+                tgtSel.innerHTML = '';
+                
+                for (const [code, name] of Object.entries(langs)) {
+                    srcSel.innerHTML += `<option value="${code}">${name} (${code})</option>`;
+                    tgtSel.innerHTML += `<option value="${code}">${name} (${code})</option>`;
+                }
+                tgtSel.value = 'zh';
+            } catch(e) {
+                console.error('Failed to load languages:', e);
+            }
+            
+            // 加载模型列表
+            await loadModels();
+            
+            updateGPU();
+            setInterval(updateGPU, 5000);
+            
+            if (localStorage.getItem('theme') === 'light') document.body.classList.remove('dark');
+            
+            // 文件上传
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            dropZone.onclick = () => fileInput.click();
+            dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+            dropZone.ondragleave = () => dropZone.classList.remove('dragover');
+            dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); };
+            fileInput.onchange = () => handleFile(fileInput.files[0]);
+        }
+        
+        async function loadModels() {
+            try {
+                const data = await fetch('/api/models').then(r => r.json());
+                MODELS = data.models || {};
+                // 只有当 GPU 已加载模型时才设置 currentModel，否则为 null
+                currentModel = data.current;  // 不使用 default 作为 fallback
+                defaultModel = data.default;
+                renderModelGrid();
+            } catch(e) {
+                console.error('Failed to load models:', e);
+            }
+        }
+        
+        function renderModelGrid() {
+            const grid = document.getElementById('model-grid');
+            grid.innerHTML = '';
+            
+            for (const [id, info] of Object.entries(MODELS)) {
+                const card = document.createElement('div');
+                // 只有真正加载的模型才显示 active
+                card.className = 'model-card' + (currentModel === id ? ' active' : '');
+                card.dataset.model = id;
+                
+                const badges = [];
+                // Size badge
+                if (info.size) badges.push(`<span class="badge badge-size">${info.size}</span>`);
+                // Quantization badge
+                if (info.quantization) badges.push(`<span class="badge badge-quant">${info.quantization}</span>`);
+                // Quality badge
+                if (info.quality) {
+                    const qClass = info.quality.includes('Best') ? 'badge-best' : 'badge-quality';
+                    badges.push(`<span class="badge ${qClass}">${info.quality}</span>`);
+                }
+                
+                card.innerHTML = `
+                    <div class="name">${info.name || id}</div>
+                    <div class="info">${badges.join('')}</div>
+                    <div class="info" style="margin-top:4px;">${info.description || ''}</div>
+                `;
+                card.onclick = () => switchModel(id);
+                grid.appendChild(card);
+            }
+        }
+        
+        async function switchModel(modelId) {
+            if (modelId === currentModel) return;
+            
+            const cards = document.querySelectorAll('.model-card');
+            cards.forEach(c => c.classList.remove('active', 'loading'));
+            
+            const targetCard = document.querySelector(`[data-model="${modelId}"]`);
+            targetCard.classList.add('loading');
+            document.getElementById('model-loading').style.display = 'inline';
+            
+            try {
+                const res = await fetch('/api/models/switch', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({model: modelId})
+                });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    currentModel = modelId;
+                    targetCard.classList.remove('loading');
+                    targetCard.classList.add('active');
+                    updateGPU();
+                } else {
+                    alert('切换失败: ' + (data.error || data.detail));
+                    targetCard.classList.remove('loading');
+                }
+            } catch(e) {
+                alert('切换失败: ' + e.message);
+                targetCard.classList.remove('loading');
+            } finally {
+                document.getElementById('model-loading').style.display = 'none';
+            }
+        }
+        
+        function handleFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('source').value = e.target.result;
+                document.getElementById('dropZone').innerHTML = `📄 ${file.name} (${(file.size/1024).toFixed(1)}KB)<input type="file" id="fileInput" accept=".txt,.md,.text">`;
+            };
+            reader.readAsText(file);
+        }
+        
+        async function updateGPU() {
+            try {
+                const data = await fetch('/api/gpu/status').then(r => r.json());
+                const dot = document.getElementById('gpu-dot');
+                
+                if (data.loading) {
+                    dot.className = 'dot loading';
+                    document.getElementById('gpu-status').textContent = '加载中...';
+                } else {
+                    dot.className = 'dot ' + (data.loaded ? 'on' : 'off');
+                    document.getElementById('gpu-status').textContent = data.loaded ? '已加载' : '未加载';
+                }
+                
+                const usedMB = data.gpu?.used_mb;
+                const totalMB = data.gpu?.total_mb;
+                if (usedMB !== undefined && totalMB !== undefined) {
+                    document.getElementById('gpu-mem').textContent = `${usedMB} / ${totalMB} MB`;
+                } else {
+                    document.getElementById('gpu-mem').textContent = '-';
+                }
+                document.getElementById('gpu-idle').textContent = data.idle_seconds !== null && data.idle_seconds !== undefined ? `${data.idle_seconds}秒` : '-';
+                
+                // 统一转大写匹配 MODELS key
+                const serverModel = data.current_model ? data.current_model.toUpperCase() : null;
+                const modelName = serverModel ? (MODELS[serverModel]?.name || serverModel) : '-';
+                document.getElementById('gpu-model').textContent = modelName;
+                
+                // 更新模型卡片状态 - 同步服务器状态
+                if (serverModel !== currentModel) {
+                    currentModel = serverModel;
+                    renderModelGrid();
+                }
+            } catch(e) {
+                console.error('GPU status error:', e);
+            }
+        }
+        
+        let elapsedTimer = null;
+        
+        async function doTranslate(stream = false) {
+            const text = document.getElementById('source').value.trim();
+            if (!text) return alert('请输入要翻译的文本');
+            
+            // 如果没有选中模型，使用默认模型
+            const modelToUse = currentModel || defaultModel;
+            
+            const btn = document.getElementById(stream ? 'stream-btn' : 'translate-btn');
+            const otherBtn = document.getElementById(stream ? 'translate-btn' : 'stream-btn');
+            btn.disabled = otherBtn.disabled = true;
+            btn.textContent = '翻译中...';
+            
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const progressInfo = document.getElementById('progressInfo');
+            const streamOutput = document.getElementById('streamOutput');
+            const resultArea = document.getElementById('result');
+            
+            // 显示进度条和进度信息
+            progressBar.style.display = 'block';
+            progressInfo.style.display = 'block';
+            progressFill.style.width = '0%';
+            streamOutput.style.display = stream ? 'block' : 'none';
+            streamOutput.innerHTML = '';
+            resultArea.style.display = stream ? 'none' : 'block';
+            document.getElementById('stats').style.display = 'none';
+            
+            // 启动计时器
+            const startTime = Date.now();
+            document.getElementById('progress-elapsed').textContent = '0';
+            document.getElementById('progress-current').textContent = '0';
+            document.getElementById('progress-total').textContent = '-';
+            
+            elapsedTimer = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('progress-elapsed').textContent = elapsed;
+            }, 1000);
+            
+            if (!stream) document.getElementById('loading').style.display = 'flex';
+            
+            const body = {
+                text,
+                target_lang: document.getElementById('target-lang').value,
+                source_lang: document.getElementById('source-lang').value || null,
+                chunk_size: parseInt(document.getElementById('chunk_size').value),
+                overlap: parseInt(document.getElementById('overlap').value),
+                max_tokens: parseInt(document.getElementById('max_tokens').value),
+                stream,
+                model: modelToUse
+            };
+            
+            try {
+                if (stream) {
+                    const response = await fetch('/api/translate/stream', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(body)
+                    });
+                    
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let results = [];
+                    let totalChunks = 1;
+                    
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const lines = decoder.decode(value).split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.event === 'start') {
+                                        totalChunks = data.total_chunks || 1;
+                                        document.getElementById('progress-total').textContent = totalChunks;
+                                        document.getElementById('stat-input').textContent = data.input_length || text.length;
+                                        document.getElementById('stat-chunks').textContent = totalChunks;
+                                    } else if (data.event === 'chunk') {
+                                        results.push(data.result);
+                                        const progress = (data.chunk / data.total * 100);
+                                        progressFill.style.width = progress + '%';
+                                        document.getElementById('progress-current').textContent = data.chunk;
+                                        const div = document.createElement('div');
+                                        div.className = 'chunk-item';
+                                        div.innerHTML = `<small style="color:#888">第${data.chunk}/${data.total}段 (${data.elapsed_ms || '-'}ms)</small><br>${data.result}`;
+                                        streamOutput.appendChild(div);
+                                        streamOutput.scrollTop = streamOutput.scrollHeight;
+                                    } else if (data.event === 'done') {
+                                        clearInterval(elapsedTimer);
+                                        progressInfo.style.display = 'none';
+                                        streamOutput.style.display = 'none';
+                                        resultArea.style.display = 'block';
+                                        document.getElementById('stat-time').textContent = (data.elapsed_ms || '-') + ' ms';
+                                        document.getElementById('stat-output').textContent = data.output_length || 0;
+                                        document.getElementById('stat-model').textContent = MODELS[data.model?.toUpperCase()]?.name || data.model || modelToUse;
+                                        document.getElementById('stats').style.display = 'block';
+                                        // 使用后端返回的合并结果
+                                        resultArea.value = data.result || results.join('');
+                                        // 更新当前模型
+                                        if (data.model) {
+                                            currentModel = data.model.toUpperCase();
+                                            renderModelGrid();
+                                        }
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                    }
+                } else {
+                    const res = await fetch('/api/translate', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    
+                    clearInterval(elapsedTimer);
+                    progressInfo.style.display = 'none';
+                    progressBar.style.display = 'none';
+                    
+                    if (data.status === 'success' || data.result) {
+                        resultArea.value = data.result;
+                        document.getElementById('stats').style.display = 'block';
+                        document.getElementById('stat-time').textContent = (data.elapsed_ms || '-') + ' ms';
+                        document.getElementById('stat-input').textContent = data.input_length || text.length;
+                        document.getElementById('stat-output').textContent = data.output_length || data.result.length;
+                        document.getElementById('stat-chunks').textContent = data.chunks || 1;
+                        document.getElementById('stat-model').textContent = MODELS[data.model]?.name || data.model || modelToUse;
+                        // 更新当前模型
+                        if (data.model) {
+                            currentModel = data.model.toUpperCase();
+                            renderModelGrid();
+                        }
+                    } else {
+                        alert('翻译失败: ' + (data.detail || data.error || '未知错误'));
+                    }
+                }
+            } catch(e) {
+                clearInterval(elapsedTimer);
+                alert('请求失败: ' + e.message);
+            } finally {
+                clearInterval(elapsedTimer);
+                btn.disabled = otherBtn.disabled = false;
+                btn.textContent = stream ? '⚡ 流式' : '🚀 翻译';
+                document.getElementById('loading').style.display = 'none';
+                updateGPU();
+            }
+        }
+        
+        function swapLang() {
+            const src = document.getElementById('source-lang');
+            const tgt = document.getElementById('target-lang');
+            if (src.value) [src.value, tgt.value] = [tgt.value, src.value];
+            const srcText = document.getElementById('source').value;
+            const tgtText = document.getElementById('result').value;
+            if (tgtText) {
+                document.getElementById('source').value = tgtText;
+                document.getElementById('result').value = srcText;
+            }
+        }
+        
+        function clearAll() {
+            document.getElementById('source').value = '';
+            document.getElementById('result').value = '';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('streamOutput').innerHTML = '';
+            document.getElementById('streamOutput').style.display = 'none';
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'none';
+        }
+        
+        function copyText(id) {
+            const text = document.getElementById(id).value;
+            navigator.clipboard.writeText(text).then(() => alert('已复制'));
+        }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+        }
+        
+        function updateVal(id, val) { document.getElementById(id).textContent = val; }
+        
+        async function releaseGPU() {
+            try {
+                await fetch('/api/gpu/offload', {method: 'POST'});
+                currentModel = null;
+                renderModelGrid();
+                updateGPU();
+            } catch(e) {
+                alert('释放失败: ' + e.message);
+            }
+        }
+        
+        document.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') doTranslate(false); });
+        
+        init();
+    </script>
 </body>
 </html>

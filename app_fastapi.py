@@ -22,8 +22,10 @@ from pydantic import BaseModel, Field
 DEFAULT_MODEL = os.getenv("MODEL_NAME", "27b")
 DEFAULT_QUANTIZATION = int(os.getenv("QUANTIZATION", "8"))
 DEFAULT_BACKEND = os.getenv("BACKEND", "gguf")
-GPU_IDLE_TIMEOUT = int(os.getenv("GPU_IDLE_TIMEOUT", "300"))
-MAX_CHUNK_LENGTH = int(os.getenv("MAX_CHUNK_LENGTH", "80"))
+GPU_IDLE_TIMEOUT = int(os.getenv("GPU_IDLE_TIMEOUT", "0"))  # 0 = unload immediately after use
+MAX_CHUNK_LENGTH = int(os.getenv("MAX_CHUNK_LENGTH", "100"))  # 100 is safe, 150+ may cause truncation
+DEFAULT_OVERLAP = int(os.getenv("DEFAULT_OVERLAP", "0"))  # 0 = no sliding window, >0 = overlap chars
+REPETITION_PENALTY = float(os.getenv("REPETITION_PENALTY", "1.0"))  # 1.0 = no penalty, 1.1+ = reduce repetition
 
 # Supported languages (55 from TranslateGemma)
 LANGUAGES = {
@@ -45,12 +47,12 @@ LANGUAGES = {
 
 # Model configurations
 AVAILABLE_MODELS = {
-    "4b-Q4": {"size": "4b", "quant": 4, "vram": "~3GB", "speed": "fastest", "quality": "good"},
-    "4b-Q8": {"size": "4b", "quant": 8, "vram": "~5GB", "speed": "fast", "quality": "better"},
-    "12b-Q4": {"size": "12b", "quant": 4, "vram": "~7GB", "speed": "balanced", "quality": "high"},
-    "12b-Q8": {"size": "12b", "quant": 8, "vram": "~12GB", "speed": "medium", "quality": "higher"},
-    "27b-Q4": {"size": "27b", "quant": 4, "vram": "~15GB", "speed": "slow", "quality": "best"},
-    "27b-Q8": {"size": "27b", "quant": 8, "vram": "~28GB", "speed": "slowest", "quality": "best+"},
+    "4B-Q4": {"name": "TranslateGemma 4B Q4", "size": "4B", "quantization": "Q4", "quant": 4, "vram": "~3GB", "quality": "Good", "description": "最快速度，适合日常翻译"},
+    "4B-Q8": {"name": "TranslateGemma 4B Q8", "size": "4B", "quantization": "Q8", "quant": 8, "vram": "~5GB", "quality": "Better", "description": "平衡速度与质量"},
+    "12B-Q4": {"name": "TranslateGemma 12B Q4", "size": "12B", "quantization": "Q4", "quant": 4, "vram": "~7GB", "quality": "High", "description": "中等模型，高质量翻译"},
+    "12B-Q8": {"name": "TranslateGemma 12B Q8", "size": "12B", "quantization": "Q8", "quant": 8, "vram": "~12GB", "quality": "Higher", "description": "更高精度，推荐使用"},
+    "27B-Q4": {"name": "TranslateGemma 27B Q4", "size": "27B", "quantization": "Q4", "quant": 4, "vram": "~15GB", "quality": "Best", "description": "大模型，最佳翻译质量"},
+    "27B-Q8": {"name": "TranslateGemma 27B Q8", "size": "27B", "quantization": "Q8", "quant": 8, "vram": "~28GB", "quality": "Best+", "description": "最高质量，专业翻译首选"},
 }
 
 
@@ -115,11 +117,24 @@ class GPUManager:
             return self.translator
 
     def _schedule_unload(self):
+        """Schedule unload after idle timeout. If timeout is 0, unload immediately after use."""
         if self.unload_timer:
             self.unload_timer.cancel()
+            self.unload_timer = None
+        
+        if GPU_IDLE_TIMEOUT <= 0:
+            # Immediate unload mode - will be called after translation completes
+            return
+        
         self.unload_timer = threading.Timer(GPU_IDLE_TIMEOUT, self._auto_unload)
         self.unload_timer.daemon = True
         self.unload_timer.start()
+
+    def unload_if_immediate(self):
+        """Unload immediately if GPU_IDLE_TIMEOUT is 0."""
+        if GPU_IDLE_TIMEOUT <= 0:
+            with self.lock:
+                self._do_unload()
 
     def _auto_unload(self):
         with self.lock:
@@ -149,12 +164,22 @@ class GPUManager:
         try:
             import torch
             if torch.cuda.is_available():
-                gpu_info = {
-                    "available": True,
-                    "device": torch.cuda.get_device_name(0),
-                    "free_mb": int(torch.cuda.mem_get_info()[0] / 1024 / 1024),
-                    "total_mb": int(torch.cuda.mem_get_info()[1] / 1024 / 1024),
-                }
+                # 只有在模型加载后才显示显存信息
+                if self.translator is not None:
+                    free, total = torch.cuda.mem_get_info()
+                    used = total - free
+                    gpu_info = {
+                        "available": True,
+                        "device": torch.cuda.get_device_name(0),
+                        "free_mb": int(free / 1024 / 1024),
+                        "total_mb": int(total / 1024 / 1024),
+                        "used_mb": int(used / 1024 / 1024),
+                    }
+                else:
+                    gpu_info = {
+                        "available": True,
+                        "device": torch.cuda.get_device_name(0),
+                    }
         except:
             pass
         
@@ -172,14 +197,9 @@ gpu = GPUManager()
 
 
 # ==================== Text Processing ====================
-def split_text(text: str, max_length: int = MAX_CHUNK_LENGTH) -> List[str]:
-    """Smart text splitting by sentences."""
+def split_sentences(text: str) -> List[str]:
+    """Split text into sentences."""
     import re
-    
-    if len(text) <= max_length:
-        return [text]
-    
-    # Split by sentence endings
     sentence_pattern = r'([。！？.!?]+[\s]*)'
     parts = re.split(sentence_pattern, text)
     
@@ -190,28 +210,114 @@ def split_text(text: str, max_length: int = MAX_CHUNK_LENGTH) -> List[str]:
             sent += parts[i + 1]
         if sent.strip():
             sentences.append(sent)
+    return sentences
+
+
+def split_text(text: str, max_length: int = MAX_CHUNK_LENGTH, overlap: int = 0) -> List[dict]:
+    """
+    Smart text splitting with optional sliding window overlap.
     
-    if not sentences:
-        return [text[i:i+max_length] for i in range(0, len(text), max_length)]
+    Args:
+        text: Input text
+        max_length: Maximum chunk size
+        overlap: Overlap size for sliding window (0 = disabled)
+    
+    Returns:
+        List of dicts with 'text' and 'overlap_chars' (chars to skip in merge)
+    """
+    import re
+    
+    # First split by paragraph (double newline or single newline)
+    paragraphs = re.split(r'\n\s*\n|\n', text)
+    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    
+    if not paragraphs:
+        return [{"text": text, "overlap_chars": 0}] if text.strip() else []
     
     chunks = []
-    current = ""
     
-    for sent in sentences:
-        if len(current) + len(sent) <= max_length:
-            current += sent
+    for para in paragraphs:
+        if len(para) <= max_length:
+            chunks.append({"text": para, "overlap_chars": 0})
         else:
-            if current:
-                chunks.append(current.strip())
-            current = sent if len(sent) <= max_length else ""
-            if len(sent) > max_length:
-                for i in range(0, len(sent), max_length):
-                    chunks.append(sent[i:i+max_length].strip())
+            # Split long paragraph by sentences
+            sentences = split_sentences(para)
+            
+            if not sentences:
+                # No sentence boundaries, split by length
+                for i in range(0, len(para), max_length):
+                    chunk_text = para[i:i+max_length].strip()
+                    chunks.append({"text": chunk_text, "overlap_chars": 0})
+            else:
+                # Group sentences into chunks with optional overlap
+                current = ""
+                prev_overlap_text = ""  # Text to prepend for context
+                
+                for sent in sentences:
+                    if len(current) + len(sent) <= max_length:
+                        current += sent
+                    else:
+                        if current:
+                            # Add chunk with overlap prefix if enabled
+                            if overlap > 0 and prev_overlap_text:
+                                chunk_text = prev_overlap_text + current
+                                overlap_chars = len(prev_overlap_text)
+                            else:
+                                chunk_text = current
+                                overlap_chars = 0
+                            chunks.append({"text": chunk_text.strip(), "overlap_chars": overlap_chars})
+                            
+                            # Prepare overlap for next chunk
+                            if overlap > 0:
+                                prev_overlap_text = _get_overlap_text(current, overlap)
+                        
+                        if len(sent) > max_length:
+                            # Handle very long sentence
+                            for i in range(0, len(sent), max_length):
+                                chunks.append({"text": sent[i:i+max_length].strip(), "overlap_chars": 0})
+                            current = ""
+                            prev_overlap_text = ""
+                        else:
+                            current = sent
+                
+                if current.strip():
+                    if overlap > 0 and prev_overlap_text:
+                        chunk_text = prev_overlap_text + current
+                        overlap_chars = len(prev_overlap_text)
+                    else:
+                        chunk_text = current
+                        overlap_chars = 0
+                    chunks.append({"text": chunk_text.strip(), "overlap_chars": overlap_chars})
     
-    if current.strip():
-        chunks.append(current.strip())
+    # Mark first chunk as having no overlap to skip
+    if chunks:
+        chunks[0]["overlap_chars"] = 0
     
-    return chunks
+    return chunks if chunks else [{"text": text, "overlap_chars": 0}]
+
+
+def _get_overlap_text(text: str, overlap: int) -> str:
+    """Get the last N characters for overlap, preferring sentence boundaries."""
+    if len(text) <= overlap:
+        return text
+    
+    # Try to find a sentence boundary within the overlap region
+    overlap_region = text[-overlap * 2:]  # Look in a larger region
+    sentences = split_sentences(overlap_region)
+    
+    if sentences and len(sentences) > 1:
+        # Use the last complete sentence(s) that fit within overlap
+        result = ""
+        for sent in reversed(sentences):
+            if len(result) + len(sent) <= overlap * 1.5:  # Allow some flexibility
+                result = sent + result
+            else:
+                break
+        if result:
+            return result
+    
+    # Fallback: just take last N chars
+    return text[-overlap:]
 
 
 # ==================== Translation Functions ====================
@@ -222,40 +328,104 @@ def translate(
     model_size: str = None,
     quantization: int = None,
     chunk_size: int = MAX_CHUNK_LENGTH,
+    overlap: int = DEFAULT_OVERLAP,
+    repetition_penalty: float = REPETITION_PENALTY,
     auto_split: bool = True,
 ) -> dict:
-    """Translate text with chunking support."""
+    """Translate text with chunking and optional sliding window support."""
     start_time = time.time()
     
-    translator = gpu.load(model_size, quantization)
+    # Parse model key if provided (e.g., "27B-Q8" -> "27b", 8)
+    actual_model = model_size
+    actual_quant = quantization
+    if model_size and "-Q" in model_size.upper():
+        parts = model_size.upper().split("-Q")
+        actual_model = parts[0].lower()
+        actual_quant = int(parts[1]) if len(parts) > 1 else quantization
+    elif model_size:
+        actual_model = model_size.lower()
+    
+    translator = gpu.load(actual_model, actual_quant)
     
     # Set target language
     if target_lang:
         translator.set_force_target(target_lang)
     
-    chunks = split_text(text, chunk_size) if auto_split else [text]
+    # Split text with optional overlap
+    if auto_split:
+        chunk_data = split_text(text, chunk_size, overlap)
+    else:
+        chunk_data = [{"text": text, "overlap_chars": 0}]
+    
     results = []
     
-    for chunk in chunks:
-        result, src, tgt = translator.translate(chunk, force_target=target_lang)
-        results.append(result)
+    for chunk_info in chunk_data:
+        chunk_text = chunk_info["text"]
+        overlap_chars = chunk_info["overlap_chars"]
+        
+        result, src, tgt = translator.translate(chunk_text, force_target=target_lang)
+        
+        # If overlap was used, we need to handle potential duplicate content
+        # The overlap is in source text for context, but translation may have duplicates
+        results.append({
+            "text": result,
+            "overlap_chars": overlap_chars,
+            "source_overlap": overlap_chars > 0,
+        })
+        
         if not source_lang:
             source_lang = src
     
+    # Unload immediately if configured
+    gpu.unload_if_immediate()
+    
     elapsed_ms = int((time.time() - start_time) * 1000)
-    final_result = " ".join(results) if len(results) > 1 else results[0]
+    
+    # Merge results
+    final_result = _merge_translations(results, text, overlap > 0)
+    
+    # Store model info before potential unload
+    model_info = f"{actual_model}-Q{actual_quant}" if actual_model else f"{DEFAULT_MODEL}-Q{DEFAULT_QUANTIZATION}"
     
     return {
         "result": final_result,
         "source_lang": source_lang,
         "target_lang": target_lang,
         "elapsed_ms": elapsed_ms,
-        "chunks": len(chunks),
+        "chunks": len(chunk_data),
         "input_length": len(text),
         "output_length": len(final_result),
-        "model": f"{gpu.current_model}-Q{gpu.current_quant}",
+        "model": model_info,
+        "overlap_used": overlap,
         "chars_per_sec": round(len(text) / (elapsed_ms / 1000), 1) if elapsed_ms > 0 else 0,
     }
+
+
+def _merge_translations(results: List[dict], original_text: str, has_overlap: bool) -> str:
+    """
+    Merge translated chunks, handling overlap if present.
+    
+    Strategy:
+    - First chunk: keep complete
+    - Subsequent chunks with overlap: the overlap provided context for translation,
+      but we keep the full translation (overlap helps quality, not for deduplication)
+    """
+    if not results:
+        return ""
+    
+    if len(results) == 1:
+        return results[0]["text"]
+    
+    # Check if original has newlines
+    use_newline = '\n' in original_text
+    separator = "\n" if use_newline else ""
+    
+    merged = [results[0]["text"]]
+    
+    for r in results[1:]:
+        merged.append(r["text"])
+    
+    return separator.join(merged)
 
 
 async def translate_stream(
@@ -265,38 +435,58 @@ async def translate_stream(
     model_size: str = None,
     quantization: int = None,
     chunk_size: int = MAX_CHUNK_LENGTH,
+    overlap: int = DEFAULT_OVERLAP,
 ) -> AsyncGenerator[str, None]:
     """Stream translation results chunk by chunk."""
     start_time = time.time()
-    chunks = split_text(text, chunk_size)
-    total_chunks = len(chunks)
+    chunk_data = split_text(text, chunk_size, overlap)
+    total_chunks = len(chunk_data)
     
-    yield f"data: {json.dumps({'event': 'start', 'total_chunks': total_chunks, 'input_length': len(text)})}\n\n"
+    yield f"data: {json.dumps({'event': 'start', 'total_chunks': total_chunks, 'input_length': len(text), 'overlap': overlap})}\n\n"
     
-    translator = gpu.load(model_size, quantization)
+    # Parse model key if provided (e.g., "27B-Q8" -> "27b", 8)
+    actual_model = model_size
+    actual_quant = quantization
+    if model_size and "-Q" in model_size.upper():
+        parts = model_size.upper().split("-Q")
+        actual_model = parts[0].lower()
+        actual_quant = int(parts[1]) if len(parts) > 1 else quantization
+    elif model_size:
+        actual_model = model_size.lower()
+    
+    translator = gpu.load(actual_model, actual_quant)
     if target_lang:
         translator.set_force_target(target_lang)
     
     results = []
     
-    for i, chunk in enumerate(chunks):
+    for i, chunk_info in enumerate(chunk_data):
+        chunk_text = chunk_info["text"]
         chunk_start = time.time()
         
         yield f"data: {json.dumps({'event': 'progress', 'chunk': i + 1, 'total': total_chunks})}\n\n"
         
         loop = asyncio.get_event_loop()
         result, src, tgt = await loop.run_in_executor(
-            None, lambda c=chunk: translator.translate(c, force_target=target_lang)
+            None, lambda c=chunk_text: translator.translate(c, force_target=target_lang)
         )
-        results.append(result)
+        results.append({"text": result, "overlap_chars": chunk_info["overlap_chars"]})
         
         chunk_elapsed = int((time.time() - chunk_start) * 1000)
-        yield f"data: {json.dumps({'event': 'chunk', 'chunk': i + 1, 'result': result, 'elapsed_ms': chunk_elapsed})}\n\n"
+        yield f"data: {json.dumps({'event': 'chunk', 'chunk': i + 1, 'total': total_chunks, 'result': result, 'elapsed_ms': chunk_elapsed})}\n\n"
+    
+    # Store model info before potential unload
+    model_info = f"{actual_model}-Q{actual_quant}" if actual_model else f"{DEFAULT_MODEL}-Q{DEFAULT_QUANTIZATION}"
+    
+    # Unload immediately if configured
+    gpu.unload_if_immediate()
     
     total_elapsed = int((time.time() - start_time) * 1000)
-    final_result = " ".join(results)
     
-    yield f"data: {json.dumps({'event': 'done', 'result': final_result, 'elapsed_ms': total_elapsed})}\n\n"
+    # Merge results
+    final_result = _merge_translations(results, text, overlap > 0)
+    
+    yield f"data: {json.dumps({'event': 'done', 'result': final_result, 'elapsed_ms': total_elapsed, 'output_length': len(final_result), 'model': model_info, 'overlap_used': overlap})}\n\n"
 
 
 # ==================== FastAPI App ====================
@@ -332,6 +522,7 @@ class TranslateRequest(BaseModel):
     model: Optional[str] = Field(None, description="Model size: 4b, 12b, 27b")
     quantization: Optional[int] = Field(None, description="Quantization: 4 or 8")
     chunk_size: int = Field(MAX_CHUNK_LENGTH, description="Chunk size for long text")
+    overlap: int = Field(DEFAULT_OVERLAP, description="Overlap size for sliding window (0=disabled)")
     auto_split: bool = Field(True, description="Auto-split long text")
     stream: bool = Field(False, description="Stream results")
 
@@ -376,6 +567,8 @@ async def api_config():
         "default_backend": DEFAULT_BACKEND,
         "gpu_idle_timeout": GPU_IDLE_TIMEOUT,
         "max_chunk_length": MAX_CHUNK_LENGTH,
+        "default_overlap": DEFAULT_OVERLAP,
+        "repetition_penalty": REPETITION_PENALTY,
         "supported_languages": len(LANGUAGES),
     }
 
@@ -389,23 +582,23 @@ async def api_languages():
 async def api_models():
     return {
         "models": AVAILABLE_MODELS,
-        "current": f"{gpu.current_model}-Q{gpu.current_quant}" if gpu.current_model else None,
-        "default": f"{DEFAULT_MODEL}-Q{DEFAULT_QUANTIZATION}",
+        "current": f"{gpu.current_model.upper()}-Q{gpu.current_quant}" if gpu.current_model else None,
+        "default": f"{DEFAULT_MODEL.upper()}-Q{DEFAULT_QUANTIZATION}",
     }
 
 
 @app.post("/api/models/switch")
 async def api_switch_model(req: SwitchModelRequest):
     """Switch to a different model."""
-    # Parse model key
-    model_key = req.model.upper() if "-Q" in req.model.upper() else req.model
+    # Parse model key - normalize to uppercase
+    model_key = req.model.upper()
     
     if model_key in AVAILABLE_MODELS:
         info = AVAILABLE_MODELS[model_key]
-        model_size = info["size"]
+        model_size = info["size"].lower()  # GPUManager expects lowercase
         quant = info["quant"]
-    elif req.model in ["4b", "12b", "27b"]:
-        model_size = req.model
+    elif req.model.lower() in ["4b", "12b", "27b"]:
+        model_size = req.model.lower()
         quant = DEFAULT_QUANTIZATION
     else:
         raise HTTPException(status_code=400, detail=f"Unknown model: {req.model}")
@@ -416,7 +609,7 @@ async def api_switch_model(req: SwitchModelRequest):
         elapsed = int((time.time() - start) * 1000)
         return {
             "status": "success",
-            "model": f"{model_size}-Q{quant}",
+            "model": f"{model_size.upper()}-Q{quant}",
             "elapsed_ms": elapsed,
         }
     except Exception as e:
@@ -436,6 +629,7 @@ async def api_translate(req: TranslateRequest):
                     model_size=req.model,
                     quantization=req.quantization,
                     chunk_size=req.chunk_size,
+                    overlap=req.overlap,
                 ),
                 media_type="text/event-stream",
                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
@@ -448,6 +642,7 @@ async def api_translate(req: TranslateRequest):
             model_size=req.model,
             quantization=req.quantization,
             chunk_size=req.chunk_size,
+            overlap=req.overlap,
             auto_split=req.auto_split,
         )
         return TranslateResponse(status="success", **result)
@@ -466,6 +661,7 @@ async def api_translate_stream(req: TranslateRequest):
             model_size=req.model,
             quantization=req.quantization,
             chunk_size=req.chunk_size,
+            overlap=req.overlap,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},

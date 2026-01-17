@@ -1,0 +1,22 @@
+services:
+  translategemma:
+    image: neosun/translategemma:v1.0.0-allinone
+    container_name: translategemma-allinone
+    ports:
+      - "0.0.0.0:8022:8022"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=1
+      - MODEL_NAME=27b
+      - QUANTIZATION=8
+      - BACKEND=gguf
+      - GPU_IDLE_TIMEOUT=0
+      - MAX_CHUNK_LENGTH=100
+      - DEFAULT_OVERLAP=0
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
