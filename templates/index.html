@@ -1,125 +1,114 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TranslateGemma - Local AI Translation</title>
+    <title>TranslateGemma 翻译服务</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <h1>🌐 TranslateGemma</h1>
-            <p class="subtitle" data-i18n="subtitle">Local AI Translation - 55 Languages Supported</p>
-            <div class="header-controls">
-                <select id="ui-lang" title="UI Language">
-                    <option value="en">English</option>
-                    <option value="zh-CN">简体中文</option>
-                    <option value="zh-TW">繁體中文</option>
-                    <option value="ja">日本語</option>
-                </select>
-                <button id="theme-toggle" title="Toggle Dark Mode">🌙</button>
-            </div>
-        </header>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <span class="logo">🌐</span>
+            <h1>TranslateGemma 翻译服务</h1>
+        </div>
+        <div class="header-right">
+            <button id="theme-toggle" class="icon-btn" title="切换主题">🌙</button>
+            <a href="/docs" target="_blank" class="btn-api">📚 API文档</a>
+        </div>
+    </header>
 
-        <!-- Main Content -->
-        <main>
-            <!-- Translation Area -->
-            <div class="translation-area">
-                <div class="input-section">
-                    <div class="section-header">
-                        <label data-i18n="source_text">Source Text</label>
-                        <select id="source-lang">
-                            <option value="auto" data-i18n="auto_detect">Auto Detect</option>
-                        </select>
-                    </div>
-                    <textarea id="source-text" placeholder="Enter text to translate..." data-i18n-placeholder="enter_text"></textarea>
-                    <div class="input-actions">
-                        <span id="char-count">0 chars</span>
-                        <button id="clear-btn" class="btn-secondary" data-i18n="clear">Clear</button>
-                        <label class="file-upload">
-                            <input type="file" id="file-input" accept=".txt,.md">
-                            <span data-i18n="upload_file">📁 Upload</span>
-                        </label>
-                    </div>
+    <main class="container">
+        <!-- Model Selection -->
+        <section class="section">
+            <h2 class="section-title">🤖 选择模型</h2>
+            <div class="model-grid" id="model-grid"></div>
+        </section>
+
+        <!-- Translation Area -->
+        <div class="translation-container">
+            <!-- Source -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>源文本</h3>
+                    <button class="btn-copy" onclick="copySource()">复制</button>
+                </div>
+                
+                <div class="file-upload" id="file-drop">
+                    <input type="file" id="file-input" accept=".txt,.md" hidden>
+                    <span>📁 拖拽文本文件或点击上传</span>
                 </div>
 
-                <div class="output-section">
-                    <div class="section-header">
-                        <label data-i18n="translation">Translation</label>
-                        <select id="target-lang"></select>
-                    </div>
-                    <div id="output-text" class="output-area"></div>
-                    <div class="output-actions">
-                        <span id="output-info"></span>
-                        <button id="copy-btn" class="btn-secondary" data-i18n="copy">Copy</button>
-                        <button id="download-btn" class="btn-secondary" data-i18n="download">Download</button>
-                    </div>
+                <div class="lang-selector">
+                    <select id="source-lang">
+                        <option value="auto">自动检测</option>
+                    </select>
+                    <button class="btn-swap" onclick="swapLangs()">⇄</button>
+                    <select id="target-lang"></select>
+                </div>
+
+                <textarea id="source-text" placeholder="输入要翻译的文本..."></textarea>
+            </section>
+
+            <!-- Result -->
+            <section class="panel">
+                <div class="panel-header">
+                    <h3>翻译结果</h3>
+                    <button class="btn-copy" onclick="copyResult()">复制</button>
+                </div>
+                <div id="result-text" class="result-area">翻译结果将显示在这里...</div>
+            </section>
+        </div>
+
+        <!-- Advanced Settings -->
+        <details class="section advanced" open>
+            <summary class="section-title">⚙️ 高级参数</summary>
+            <div class="params-grid">
+                <div class="param">
+                    <label>Temperature <span id="temp-val">0.0</span></label>
+                    <input type="range" id="temperature" min="0" max="2" step="0.1" value="0">
+                </div>
+                <div class="param">
+                    <label>Top-P <span id="topp-val">1.0</span></label>
+                    <input type="range" id="top-p" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="param">
+                    <label>Top-K <span id="topk-val">0</span></label>
+                    <input type="range" id="top-k" min="0" max="100" step="1" value="0">
+                </div>
+                <div class="param">
+                    <label>重复惩罚 <span id="rep-val">1.0</span></label>
+                    <input type="range" id="repetition" min="1" max="2" step="0.05" value="1">
                 </div>
             </div>
+        </details>
 
-            <!-- Translate Button -->
-            <div class="translate-controls">
-                <button id="translate-btn" class="btn-primary" data-i18n="translate">Translate</button>
-                <label class="checkbox-label">
-                    <input type="checkbox" id="stream-mode" checked>
-                    <span data-i18n="stream_mode">Stream Mode</span>
-                </label>
+        <!-- Action Buttons -->
+        <div class="actions">
+            <button class="btn btn-primary" onclick="translate()">🚀 翻译</button>
+            <button class="btn btn-stream" onclick="translateStream()">⚡ 流式</button>
+            <button class="btn btn-clear" onclick="clearAll()">清空</button>
+        </div>
+
+        <!-- Progress -->
+        <div id="progress" class="progress hidden">
+            <div class="progress-bar"><div id="progress-fill"></div></div>
+            <span id="progress-text"></span>
+        </div>
+
+        <!-- GPU Status -->
+        <section class="gpu-status">
+            <span class="status-title">🖥️ GPU 状态</span>
+            <div class="status-items">
+                <span id="gpu-loaded">● 未加载</span>
+                <span id="gpu-mem">📊 显存: - / - MB</span>
+                <span id="gpu-idle">⏱️ 空闲: 0秒</span>
+                <span id="gpu-model">🤖 当前模型: -</span>
+                <button class="btn-release" onclick="releaseGPU()">释放显存</button>
             </div>
-
-            <!-- Progress Bar -->
-            <div id="progress-container" class="hidden">
-                <div class="progress-bar">
-                    <div id="progress-fill"></div>
-                </div>
-                <span id="progress-text"></span>
-            </div>
-
-            <!-- Settings Panel -->
-            <details class="settings-panel">
-                <summary data-i18n="advanced_settings">⚙️ Advanced Settings</summary>
-                <div class="settings-grid">
-                    <div class="setting-group">
-                        <label data-i18n="model">Model</label>
-                        <select id="model-select">
-                            <option value="4b-Q4">4B Q4 (~3GB, Fastest)</option>
-                            <option value="4b-Q8">4B Q8 (~5GB, Fast)</option>
-                            <option value="12b-Q4" selected>12B Q4 (~7GB, Balanced) ⭐</option>
-                            <option value="12b-Q8">12B Q8 (~12GB, High Quality)</option>
-                            <option value="27b-Q4">27B Q4 (~15GB, Best)</option>
-                            <option value="27b-Q8">27B Q8 (~28GB, Best+)</option>
-                        </select>
-                    </div>
-                    <div class="setting-group">
-                        <label data-i18n="chunk_size">Chunk Size</label>
-                        <input type="number" id="chunk-size" value="80" min="20" max="200">
-                    </div>
-                    <div class="setting-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="auto-split" checked>
-                            <span data-i18n="auto_split">Auto Split Long Text</span>
-                        </label>
-                    </div>
-                </div>
-            </details>
-
-            <!-- GPU Status -->
-            <div class="gpu-status">
-                <div class="status-info">
-                    <span id="gpu-status">GPU: Loading...</span>
-                    <span id="model-status"></span>
-                </div>
-                <button id="offload-btn" class="btn-danger" data-i18n="release_gpu">Release GPU</button>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer>
-            <p>Powered by <a href="https://huggingface.co/collections/google/translategemma" target="_blank">Google TranslateGemma</a></p>
-            <p><a href="/docs" target="_blank">API Docs</a> | <a href="https://github.com/jhkchan/translategemma-cli" target="_blank">GitHub</a></p>
-        </footer>
-    </div>
+        </section>
+    </main>
 
     <script src="/static/app.js"></script>
 </body>

@@ -19,8 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 # ==================== Configuration ====================
-DEFAULT_MODEL = os.getenv("MODEL_NAME", "12b")
-DEFAULT_QUANTIZATION = int(os.getenv("QUANTIZATION", "4"))
+DEFAULT_MODEL = os.getenv("MODEL_NAME", "27b")
+DEFAULT_QUANTIZATION = int(os.getenv("QUANTIZATION", "8"))
 DEFAULT_BACKEND = os.getenv("BACKEND", "gguf")
 GPU_IDLE_TIMEOUT = int(os.getenv("GPU_IDLE_TIMEOUT", "300"))
 MAX_CHUNK_LENGTH = int(os.getenv("MAX_CHUNK_LENGTH", "80"))
